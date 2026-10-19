@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
 import { getDef, getLook, sellPrice } from "@/game/catalog";
+import { getLayer } from "@/game/avatar/catalog";
+import { DEFAULT_FIGURE, figureFromLookId, type AvatarFigure, type LayerSlot } from "@/game/avatar/layers";
+import { getBubbleStyle, getBubbleSize, type BubbleSizeId, type BubbleStyleId } from "@/game/bubbles";
 import { createRooftopNightRoom } from "@/game/roomLayouts";
 import { createNexoOccupant } from "@/game/nexo";
 import { canPlace, normRot, relayout, repairSave } from "@/game/logic";
@@ -19,6 +22,13 @@ export type GameState = SaveData & {
   authenticate: (name: string, rememberDevice: boolean) => void;
   logout: () => void;
   setGuestName: (name: string) => void;
+  figure: AvatarFigure;
+  setFigurePart: (slot: LayerSlot, layerId: string) => void;
+  setLookId: (lookId: string) => void;
+  bubbleStyle: BubbleStyleId;
+  bubbleSize: BubbleSizeId;
+  setBubbleStyle: (id: BubbleStyleId) => void;
+  setBubbleSize: (id: BubbleSizeId) => void;
   setRole: (name: string, role: UserRole) => boolean;
   grantCoins: (name: string, amount: number) => boolean;
   awardMiniGameCoins: (amount: number) => void;
@@ -68,7 +78,11 @@ function uid(): string {
   return crypto.randomUUID();
 }
 
-export function createInitial(): SaveData {
+export function createInitial(): Omit<SaveData, "figure" | "bubbleStyle" | "bubbleSize"> & {
+  figure: AvatarFigure;
+  bubbleStyle: BubbleStyleId;
+  bubbleSize: BubbleSizeId;
+} {
   const questDay = dayKey();
   const room: Room = {
     name: "Meu canto",
@@ -111,6 +125,9 @@ export function createInitial(): SaveData {
     rememberDevice: false,
     role: "admin",
     lookId: "barro",
+    figure: figureFromLookId("barro"),
+    bubbleStyle: "noir",
+    bubbleSize: "md",
     coins: 160,
     inventory,
     room,
@@ -176,12 +193,17 @@ export const useGame = create<GameState>()(
         set({ coins: s.coins + def.reward, quests: (s.quests ?? []).map((q) => q.id === id ? { ...q, progress: def.goal, claimed: true } : q), toast: `+${def.reward} moedas` });
         return true;
       },
-      enter: (name, lookId) =>
-        set({
-          entered: true,
-          guestName: name.trim().slice(0, 16) || "uknwplayer",
-          lookId: getLook(lookId).id,
-        }),
+      enter: (name, lookId) => {
+        set((s) => {
+          const id = getLook(lookId).id;
+          return {
+            entered: true,
+            guestName: name.trim().slice(0, 16) || "uknwplayer",
+            lookId: id,
+            figure: id === s.lookId ? s.figure : figureFromLookId(id),
+          };
+        });
+      },
       authenticate: (name, rememberDevice) => set({
         guestName: name.trim().slice(0, 16) || "uknwplayer",
         authenticated: true,
@@ -190,6 +212,17 @@ export const useGame = create<GameState>()(
       }),
       logout: () => set({ authenticated: false, rememberDevice: false, entered: false, selectedUid: null, movingUid: null, armedUid: null, tool: "walk" }),
       setGuestName: (name) => set({ guestName: name.trim().slice(0, 16) || "uknwplayer" }),
+      setFigurePart: (slot, layerId) => {
+        const layer = getLayer(layerId);
+        if (!layer || layer.slot !== slot) return;
+        set((s) => ({ figure: { ...(s.figure ?? DEFAULT_FIGURE), [slot]: layerId } }));
+      },
+      setLookId: (lookId) => {
+        const id = getLook(lookId).id;
+        set({ lookId: id, figure: figureFromLookId(id) });
+      },
+      setBubbleStyle: (id) => set({ bubbleStyle: getBubbleStyle(id).id }),
+      setBubbleSize: (id) => set({ bubbleSize: getBubbleSize(id) }),
       setRole: (name, role) => {
         const s = get();
         if (s.role !== "admin" || name.trim().toLowerCase() !== s.guestName.toLowerCase()) return false;
@@ -393,6 +426,9 @@ export const useGame = create<GameState>()(
           entered: s.entered,
           guestName: s.guestName,
           lookId: s.lookId,
+          figure: s.figure,
+          bubbleStyle: s.bubbleStyle,
+          bubbleSize: s.bubbleSize,
           selectedUid: null,
           tool: "walk",
           armedUid: null,
@@ -418,6 +454,9 @@ export const useGame = create<GameState>()(
         rememberDevice: s.rememberDevice,
         role: s.role,
         lookId: s.lookId,
+        figure: s.figure,
+        bubbleStyle: s.bubbleStyle,
+        bubbleSize: s.bubbleSize,
         coins: s.coins,
         inventory: s.inventory,
         room: s.room,
@@ -435,7 +474,14 @@ export const useGame = create<GameState>()(
         const saved = persisted && typeof persisted === "object" ? persisted as Partial<SaveData> : {};
         const questDay = day;
         const quests = questDay === saved.questDay && Array.isArray(saved.quests) ? saved.quests : dailyQuests(day);
-        const merged = { ...current, ...fixed, questDay, quests };
+        const merged = {
+          ...current,
+          ...fixed,
+          bubbleStyle: fixed.bubbleStyle ?? current.bubbleStyle,
+          bubbleSize: fixed.bubbleSize ?? current.bubbleSize,
+          questDay,
+          quests,
+        };
         return { ...merged, quests: (merged.quests ?? []).map((q) => {
           const def = QUESTS.find((d) => d.id === q.id);
           return def ? { ...q, progress: Math.min(def.goal, def.matches(merged)) } : q;

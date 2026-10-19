@@ -1,6 +1,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Crosshair, Minus, Plus } from "lucide-react";
 import { AvatarMenu } from "@/components/patio/AvatarMenu";
+import { ChatBubblePanel } from "@/components/patio/ChatBubblePanel";
+import { VisuaisPanel } from "@/components/patio/VisuaisPanel";
 import { blip, unlockAudio } from "@/game/audio";
 import { getDef } from "@/game/catalog";
 import { drawScene, type Ghost } from "@/game/draw";
@@ -72,6 +74,8 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
   const avatarHoldTimer = useRef(0);
   const lastAvatarTap = useRef<{ at: number; x: number; y: number } | null>(null);
   const [avatarMenu, setAvatarMenu] = useState<{ open: boolean; x: number; y: number }>({ open: false, x: 0, y: 0 });
+  const [visuaisOpen, setVisuaisOpen] = useState(false);
+  const [bubblesOpen, setBubblesOpen] = useState(false);
 
   useEffect(() => {
     let dead = false;
@@ -177,6 +181,9 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
             walking: sim.path.length > 0,
             name: s.guestName,
             lookId: s.lookId,
+            figure: s.figure,
+            bubbleStyle: s.bubbleStyle,
+            bubbleSize: s.bubbleSize,
             bubbles: sim.bubbles,
             handsPocket: sim.handsPocket,
             state: sim.state,
@@ -410,7 +417,11 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
         onClose={() => setAvatarMenu((menu) => ({ ...menu, open: false }))}
         screenX={avatarMenu.x}
         screenY={avatarMenu.y}
+        onOpenVisuais={() => setVisuaisOpen(true)}
+        onOpenBubbles={() => setBubblesOpen(true)}
       />
+      <VisuaisPanel open={visuaisOpen} onClose={() => setVisuaisOpen(false)} />
+      <ChatBubblePanel open={bubblesOpen} onClose={() => setBubblesOpen(false)} />
       <div className="pointer-events-none absolute top-3 right-3 flex flex-col gap-2">
         <button type="button" className="pointer-events-auto grid size-11 place-items-center rounded-full bg-surface text-fg" onClick={centerAvatar} aria-label="Centralizar avatar">
           <Crosshair className="size-5" />

@@ -1,4 +1,7 @@
 import { getDef, getFloor, getLook, getWall } from "@/game/catalog";
+import { resolveFigure } from "@/game/avatar/catalog";
+import { figureFromLookId, type AvatarFigure } from "@/game/avatar/layers";
+import { getBubbleSize, getBubbleStyle } from "@/game/bubbles";
 import type { Avatar, FurniDef, InvItem, Placed, Room, Rot, SaveData, Tile } from "@/game/types";
 import { SAVE_VERSION } from "@/game/types";
 
@@ -331,6 +334,9 @@ export function repairSave(raw: unknown): SaveData | null {
     rememberDevice: raw.rememberDevice === true || legacyProfile,
     role: raw.role === "admin" || raw.role === "moderator" || raw.role === "player" ? raw.role : Number(raw.version) < SAVE_VERSION ? "admin" : "player",
     lookId: getLook(String(raw.lookId ?? "")).id,
+    figure: resolveFigure((isRecord(raw.figure) ? raw.figure : figureFromLookId(String(raw.lookId ?? "barro"))) as Partial<AvatarFigure>),
+    bubbleStyle: getBubbleStyle(typeof raw.bubbleStyle === "string" ? raw.bubbleStyle : "noir").id,
+    bubbleSize: getBubbleSize(raw.bubbleSize),
     coins: Math.max(0, Math.min(999999, Math.round(Number(raw.coins) || 0))),
     inventory: inv,
     room,

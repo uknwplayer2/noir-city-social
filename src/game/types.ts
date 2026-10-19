@@ -1,3 +1,6 @@
+import type { AvatarFigure } from "@/game/avatar/layers";
+import type { BubbleSizeId, BubbleStyleId } from "@/game/bubbles";
+
 export type Rot = 0 | 1 | 2 | 3;
 /** Eight compass directions match the avatar walk sheets. */
 export type Facing = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
@@ -150,6 +153,10 @@ export type SaveData = {
   rememberDevice: boolean;
   role: UserRole;
   lookId: string;
+  /** Avatar appearance by independently selectable layers; optional for older saves. */
+  figure?: AvatarFigure;
+  bubbleStyle?: BubbleStyleId;
+  bubbleSize?: BubbleSizeId;
   coins: number;
   inventory: InvItem[];
   room: Room;

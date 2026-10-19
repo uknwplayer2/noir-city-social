@@ -1,6 +1,9 @@
 import { getDef, getFloor, getLook, getWall } from "@/game/catalog";
 import { itemDepth, project, TILE_H, TILE_W, WALL_H, type Cam } from "@/game/iso";
 import { dims, doorTile, mapPoint, tilesOf } from "@/game/logic";
+import { drawLayeredAvatar } from "@/game/avatar/drawLayers";
+import { isLegacyLookFigure, type AvatarFigure } from "@/game/avatar/layers";
+import { getBubbleStyle, type BubbleSizeId, type BubbleStyleId } from "@/game/bubbles";
 import type { Facing, FurniDef, Look, Occupant, Piece, Placed, Room, Rot } from "@/game/types";
 import classicSprite from "@/game/assets/avatars/classic.png";
 import executiveSprite from "@/game/assets/avatars/executive.png";
@@ -28,6 +31,9 @@ export type ActorDraw = {
   walking: boolean;
   name: string;
   lookId: string;
+  figure?: AvatarFigure;
+  bubbleStyle?: BubbleStyleId;
+  bubbleSize?: BubbleSizeId;
   bubbles: { text: string; author: string; x: number; y: number; age: number; duration: number }[];
   handsPocket: boolean;
   state?: "idle" | "walk" | "sit" | "lay" | "dance";
@@ -158,8 +164,19 @@ export function drawScene(
   ents.push({
     depth: actor.x + actor.y,
     layer: 3,
-    draw: () =>
-      drawAvatar(ctx, actor.x, actor.y, actor.dir, actor.phase, actor.walking, getLook(actor.lookId), actor.name, actor.handsPocket, cam, actor.facing, actor.state, actor.danceId),
+    draw: () => {
+      if (actor.figure && !isLegacyLookFigure(actor.figure, actor.lookId)) {
+        drawLayeredAvatar(ctx, actor.x, actor.y, actor.figure, cam, {
+          pose: actor.state ?? (actor.walking ? "walk" : "idle"),
+          phase: actor.phase,
+          facing: actor.facing,
+          name: actor.name,
+          handsPocket: actor.handsPocket,
+        });
+        return;
+      }
+      drawAvatar(ctx, actor.x, actor.y, actor.dir, actor.phase, actor.walking, getLook(actor.lookId), actor.name, actor.handsPocket, cam, actor.facing, actor.state, actor.danceId);
+    },
   });
 
   for (const o of room.occupants) {
@@ -185,7 +202,7 @@ export function drawScene(
   for (const bubble of actor.bubbles as { text: string; author: string; x: number; y: number; age: number; duration: number }[]) {
     const [bx, by] = project(bubble.x, bubble.y, 67, cam);
     const drift = bubble.duration ? Math.min(bubble.age * 9, 90) : Math.min(bubble.age * 9, 180);
-    drawBubble(ctx, bx, Math.max(24, by - drift), `${bubble.author}: ${bubble.text}`);
+    drawBubble(ctx, bx, Math.max(24, by - drift), `${bubble.author}: ${bubble.text}`, actor.bubbleStyle, actor.bubbleSize);
   }
 
   if (opts.selectedUid) {
@@ -839,29 +856,44 @@ export function drawAvatar(
   ctx.restore();
 }
 
-function drawBubble(ctx: CanvasRenderingContext2D, sx: number, bottom: number, text: string): number {
-  ctx.font = "500 12px Outfit, sans-serif";
-  const lines = wrap(ctx, text, 148).slice(0, 3);
+function drawBubble(
+  ctx: CanvasRenderingContext2D,
+  sx: number,
+  bottom: number,
+  text: string,
+  styleId?: BubbleStyleId,
+  sizeId?: BubbleSizeId,
+): number {
+  const style = getBubbleStyle(styleId);
+  const fontSize = sizeId === "lg" ? 13 : sizeId === "sm" ? 10 : 11;
+  const maxTextWidth = sizeId === "lg" ? 172 : sizeId === "sm" ? 122 : 148;
+  const padX = sizeId === "lg" ? 12 : sizeId === "sm" ? 6 : 8;
+  const padY = sizeId === "lg" ? 8 : sizeId === "sm" ? 4 : 6;
+  const lineH = fontSize + (sizeId === "sm" ? 2 : 4);
+  ctx.font = `500 ${fontSize}px Outfit, sans-serif`;
+  const lines = wrap(ctx, text, maxTextWidth).slice(0, 3);
   const widths = lines.map((ln) => ctx.measureText(ln).width);
   const tw = Math.max(24, ...widths);
-  const padX = 8;
-  const lineH = 15;
-  const h = lines.length * lineH + 10;
+  const h = lines.length * lineH + padY * 2;
   const w = tw + padX * 2;
   const x = sx - w / 2;
   const y = bottom - h - 8;
-  ctx.fillStyle = "#f6f0e6";
+  ctx.fillStyle = style.fill;
+  ctx.strokeStyle = style.border;
+  ctx.lineWidth = 1.5;
   round(ctx, x, y, w, h, 8);
   ctx.fill();
+  ctx.stroke();
   ctx.beginPath();
   ctx.moveTo(sx - 5, y + h);
-  ctx.lineTo(sx + 5, y + h);
   ctx.lineTo(sx, y + h + 6);
+  ctx.lineTo(sx + 5, y + h);
   ctx.fill();
-  ctx.fillStyle = "#1c1208";
+  ctx.stroke();
+  ctx.fillStyle = style.text;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  lines.forEach((ln, i) => ctx.fillText(ln, sx, y + 8 + i * lineH + lineH / 2));
+  lines.forEach((ln, i) => ctx.fillText(ln, sx, y + padY + i * lineH + lineH / 2));
   return h + 14;
 }
 
