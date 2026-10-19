@@ -30,6 +30,8 @@ export type ActorDraw = {
   lookId: string;
   bubbles: { text: string; author: string; x: number; y: number; age: number; duration: number }[];
   handsPocket: boolean;
+  state?: "idle" | "walk" | "sit" | "lay" | "dance";
+  danceId?: number;
 };
 
 const BAD = { top: "#e08989", left: "#c46464", right: "#a44e4e" };
@@ -157,7 +159,7 @@ export function drawScene(
     depth: actor.x + actor.y,
     layer: 3,
     draw: () =>
-      drawAvatar(ctx, actor.x, actor.y, actor.dir, actor.phase, actor.walking, getLook(actor.lookId), actor.name, actor.handsPocket, cam, actor.facing),
+      drawAvatar(ctx, actor.x, actor.y, actor.dir, actor.phase, actor.walking, getLook(actor.lookId), actor.name, actor.handsPocket, cam, actor.facing, actor.state, actor.danceId),
   });
 
   for (const o of room.occupants) {
@@ -655,9 +657,12 @@ export function drawAvatar(
   handsPocket: boolean,
   cam: Cam,
   facingOverride?: Facing,
+  pose: ActorDraw["state"] = "idle",
+  danceId = 1,
 ): void {
   const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-  const bob = reduce ? 0 : Math.sin(phase) * (walking ? 1.6 : 0.6);
+  const danceBounce = pose === "dance" && !reduce ? Math.abs(Math.sin(phase * (7 + danceId))) * 2.5 : 0;
+  const bob = reduce ? 0 : danceBounce + Math.sin(phase) * (walking ? 1.6 : 0.6);
   const feet = project(x, y, bob, cam);
   const ground = project(x, y, 0, cam);
   const u = cam.scale;
@@ -669,7 +674,7 @@ export function drawAvatar(
   const sprite = avatarImage(look.id);
   const walkSheet = walkImage(look.id);
   if (sprite) {
-    const spriteH = 57 * u;
+    const spriteH = 57 * u * (pose === "sit" ? 0.78 : pose === "lay" ? 0.46 : 1);
     const spriteW = spriteH * (sprite.naturalWidth / sprite.naturalHeight);
     ctx.save();
     ctx.fillStyle = "rgba(0, 0, 0, 0.38)";
@@ -682,6 +687,7 @@ export function drawAvatar(
     const frame = walking && !reduce ? Math.floor(((phase % (Math.PI * 2)) / (Math.PI * 2)) * 3) % 3 : 0;
     const motionBob = walking && !reduce ? Math.abs(Math.sin(phase * 2)) * 0.6 * u : bob;
     ctx.translate(sx, sy - spriteH / 2 + motionBob);
+    if (pose === "lay") ctx.rotate(-Math.PI / 2);
     ctx.imageSmoothingEnabled = true;
     if (animate && walkSheet) {
       const cellW = walkSheet.naturalWidth / 8;

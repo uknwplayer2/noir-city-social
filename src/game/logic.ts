@@ -42,10 +42,37 @@ export function isBlocked(items: Placed[], x: number, y: number, ignoreUid?: str
   for (const it of items) {
     if (it.uid === ignoreUid) continue;
     const def = getDef(it.defId);
-    if (!def?.blocks) continue;
+    if (!def?.blocks || def.isWalkable) continue;
     if (tilesOf(def, it.x, it.y, it.rot).some((t) => t.x === x && t.y === y)) return true;
   }
   return false;
+}
+
+export function tileStackHeight(items: Placed[], x: number, y: number, ignoreUid?: string): number {
+  let max = 0;
+  for (const item of items) {
+    if (item.uid === ignoreUid) continue;
+    const def = getDef(item.defId);
+    if (!def || !tilesOf(def, item.x, item.y, item.rot).some((tile) => tile.x === x && tile.y === y)) continue;
+    max = Math.max(max, def.stackHeight ?? def.height * 0.35);
+  }
+  return max;
+}
+
+export function findSeatAt(room: Room, x: number, y: number): Placed | null {
+  let best: Placed | null = null;
+  let bestHeight = -1;
+  for (const item of room.items) {
+    const def = getDef(item.defId);
+    if (!def?.canSit && !def?.canLay) continue;
+    if (!tilesOf(def, item.x, item.y, item.rot).some((tile) => tile.x === x && tile.y === y)) continue;
+    const height = def.stackHeight ?? def.height;
+    if (height >= bestHeight) {
+      best = item;
+      bestHeight = height;
+    }
+  }
+  return best;
 }
 
 export function canPlace(

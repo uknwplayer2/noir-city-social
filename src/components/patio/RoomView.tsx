@@ -1,12 +1,13 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Crosshair, Minus, Plus } from "lucide-react";
+import { AvatarMenu } from "@/components/patio/AvatarMenu";
 import { blip, unlockAudio } from "@/game/audio";
 import { getDef } from "@/game/catalog";
 import { drawScene, type Ghost } from "@/game/draw";
 import { frameCamera, pick, project, tileAt, type Cam, type Pick } from "@/game/iso";
 import { canPlace, nearestFree, tilesOf } from "@/game/logic";
 import { getNexoActor, resetNexo, tickNexo } from "@/game/nexo";
-import { avatarTiles, requestWalk, resetSim, sim, tickSim } from "@/game/sim";
+import { avatarTiles, requestSeat, requestWalk, resetSim, sim, tickSim } from "@/game/sim";
 import { useGame, type GameState } from "@/game/store";
 
 declare global {
@@ -68,7 +69,9 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
   const pinch = useRef<{ dist: number; scale: number } | null>(null);
   const drag = useRef<{ id: number; moved: boolean; long: boolean; hit: Pick; dist: number } | null>(null);
   const timer = useRef(0);
+  const avatarHoldTimer = useRef(0);
   const lastAvatarTap = useRef<{ at: number; x: number; y: number } | null>(null);
+  const [avatarMenu, setAvatarMenu] = useState<{ open: boolean; x: number; y: number }>({ open: false, x: 0, y: 0 });
 
   useEffect(() => {
     let dead = false;
@@ -90,6 +93,8 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     };
     return () => {
       dead = true;
+      window.clearTimeout(timer.current);
+      window.clearTimeout(avatarHoldTimer.current);
       unsub();
       previewStreamRef.current?.getTracks().forEach((track) => track.stop());
       previewStreamRef.current = null;
@@ -174,6 +179,8 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
             lookId: s.lookId,
             bubbles: sim.bubbles,
             handsPocket: sim.handsPocket,
+            state: sim.state,
+            danceId: sim.danceId,
           },
           cam,
           {
@@ -258,8 +265,20 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     const hit = pick(p.x, p.y, useGame.getState().room, camRef.current);
     drag.current = { id: e.pointerId, moved: false, long: false, hit, dist: 0 };
     window.clearTimeout(timer.current);
+    window.clearTimeout(avatarHoldTimer.current);
     const s = useGame.getState();
-    if (hit?.kind === "item" && !s.homeState && !s.armedUid && !s.movingUid) {
+    const [avatarX, avatarY] = project(sim.x, sim.y, 26, camRef.current);
+    const onAvatar = Math.hypot(p.x - avatarX, p.y - avatarY) < 18 * camRef.current.scale;
+    if (onAvatar && !s.homeState && !s.armedUid && !s.movingUid) {
+      avatarHoldTimer.current = window.setTimeout(() => {
+        if (drag.current && !drag.current.moved) {
+          drag.current.long = true;
+          setAvatarMenu({ open: true, x: p.x, y: p.y });
+          blip("ok");
+        }
+      }, 3000);
+    }
+    if (!onAvatar && hit?.kind === "item" && !s.homeState && !s.armedUid && !s.movingUid) {
       const uid = hit.uid;
       timer.current = window.setTimeout(() => {
         if (drag.current && !drag.current.moved) {
@@ -279,6 +298,7 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     if (pts.length >= 2) {
       if (drag.current) drag.current.moved = true;
       window.clearTimeout(timer.current);
+      window.clearTimeout(avatarHoldTimer.current);
       const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
       const center = { x: (pts[0]!.x + pts[1]!.x) / 2, y: (pts[0]!.y + pts[1]!.y) / 2 };
       if (!pinch.current) pinch.current = { dist, scale: view.current.userScale };
@@ -297,6 +317,7 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     if (d.dist > 10) {
       d.moved = true;
       window.clearTimeout(timer.current);
+      window.clearTimeout(avatarHoldTimer.current);
       view.current.panX += e.movementX;
       view.current.panY += e.movementY;
     }
@@ -306,6 +327,7 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     pointers.current.delete(e.pointerId);
     if (pointers.current.size < 2) pinch.current = null;
     window.clearTimeout(timer.current);
+    window.clearTimeout(avatarHoldTimer.current);
     const d = drag.current;
     drag.current = null;
     if (!d || d.id !== e.pointerId || d.moved || d.long || !sim.booted) return;
@@ -351,6 +373,11 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     if (hit?.kind === "item") {
       const item = room.items.find((i) => i.uid === hit.uid);
       const def = item ? getDef(item.defId) : null;
+      if (item && def && (def.canSit || def.canLay)) {
+        const ok = requestSeat(item.uid);
+        blip(ok ? "ok" : "no");
+        return;
+      }
       if (item && def && !def.blocks && inside) {
         if (!requestWalk(t)) blip("no");
         return;
@@ -377,6 +404,12 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         onContextMenu={(e) => e.preventDefault()}
+      />
+      <AvatarMenu
+        open={avatarMenu.open}
+        onClose={() => setAvatarMenu((menu) => ({ ...menu, open: false }))}
+        screenX={avatarMenu.x}
+        screenY={avatarMenu.y}
       />
       <div className="pointer-events-none absolute top-3 right-3 flex flex-col gap-2">
         <button type="button" className="pointer-events-auto grid size-11 place-items-center rounded-full bg-surface text-fg" onClick={centerAvatar} aria-label="Centralizar avatar">

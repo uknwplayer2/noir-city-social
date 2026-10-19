@@ -75,6 +75,11 @@ function def(partial: Omit<FurniDef, "height" | "blocks"> & { blocks?: boolean }
     ...partial,
     blocks: partial.blocks ?? partial.layer === "object",
     height: heightOf(partial.pieces),
+    stackHeight: partial.stackHeight ?? heightOf(partial.pieces) * 0.35,
+    canStack: partial.canStack ?? partial.layer === "object",
+    canSit: partial.canSit ?? false,
+    canLay: partial.canLay ?? false,
+    isWalkable: partial.isWalkable ?? false,
   };
 }
 
@@ -138,6 +143,7 @@ export const CATALOG: FurniDef[] = [
     d: 1,
     layer: "floor",
     blocks: false,
+    isWalkable: true,
     pieces: [
       box(0.08, 0.14, 0.84, 0.72, 0, 2, mat),
       box(0.12, 0.32, 0.76, 0.1, 2, 1, cream),
@@ -154,6 +160,7 @@ export const CATALOG: FurniDef[] = [
     d: 2,
     layer: "floor",
     blocks: false,
+    isWalkable: true,
     pieces: [
       box(0.08, 0.08, 1.84, 1.84, 0, 2, rug),
       box(0.14, 0.38, 1.72, 0.16, 2, 1, stripe),
@@ -171,6 +178,7 @@ export const CATALOG: FurniDef[] = [
     d: 1,
     layer: "floor",
     blocks: false,
+    isWalkable: true,
     pieces: [
       box(0.16, 0.2, 0.68, 0.6, 0, 7, cloth),
       box(0.26, 0.3, 0.48, 0.4, 7, 3, clothLight),
@@ -185,6 +193,7 @@ export const CATALOG: FurniDef[] = [
     w: 2,
     d: 1,
     layer: "object",
+    canSit: true,
     sprite: noirSofaSprites,
     spriteFrames: sofaFrames,
     spriteScale: 0.92,
@@ -199,6 +208,7 @@ export const CATALOG: FurniDef[] = [
     w: 3,
     d: 1,
     layer: "object",
+    canSit: true,
     pieces: sofaPieces(3),
   }),
   def({
@@ -210,6 +220,7 @@ export const CATALOG: FurniDef[] = [
     w: 1,
     d: 1,
     layer: "object",
+    canSit: true,
     pieces: sofaPieces(1),
   }),
   def({
@@ -221,6 +232,7 @@ export const CATALOG: FurniDef[] = [
     w: 1,
     d: 1,
     layer: "object",
+    canSit: true,
     pieces: [
       { kind: "pot", cx: 0.5, cy: 0.5, r: 0.1, z: 0, h: 14, top: woodDark.top, side: woodDark.right },
       { kind: "pot", cx: 0.5, cy: 0.5, r: 0.34, z: 14, h: 5, top: cloth.top, side: cloth.right, lip: clothLight.top },
@@ -273,6 +285,8 @@ export const CATALOG: FurniDef[] = [
     w: 2,
     d: 2,
     layer: "object",
+    canSit: true,
+    canLay: true,
     pieces: [
       box(0.05, 0.05, 1.9, 1.9, 0, 8, wood),
       box(0.16, 0.34, 1.68, 1.52, 8, 8, linen),

@@ -56,6 +56,11 @@ export type FurniDef = {
   layer: Layer;
   blocks: boolean;
   height: number;
+  stackHeight?: number;
+  canStack?: boolean;
+  canSit?: boolean;
+  canLay?: boolean;
+  isWalkable?: boolean;
   pieces: Piece[];
   sprite?: string;
   spriteFrames?: [SpriteFrame, SpriteFrame, SpriteFrame, SpriteFrame];
