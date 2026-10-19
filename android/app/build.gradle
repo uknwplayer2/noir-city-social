@@ -1,5 +1,7 @@
 apply plugin: 'com.android.application'
 
+def noirContinuityKeystorePath = System.getenv("NOIR_KEYSTORE_PATH")
+
 android {
     namespace = "com.patio.game"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,7 +18,22 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (noirContinuityKeystorePath) {
+            continuity {
+                storeFile file(noirContinuityKeystorePath)
+                storePassword System.getenv("NOIR_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("NOIR_KEY_ALIAS")
+                keyPassword System.getenv("NOIR_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
+        debug {
+            if (noirContinuityKeystorePath) {
+                signingConfig signingConfigs.continuity
+            }
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

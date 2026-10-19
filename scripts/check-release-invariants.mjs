@@ -22,6 +22,7 @@ const files = Object.fromEntries(await Promise.all([
   ["store", "src/game/store.ts"],
   ["buildScript", "scripts/build-android.mjs"],
   ["iso", "src/game/iso.ts"],
+  ["workflow", ".github/workflows/android-debug-apk.yml"],
 ].map(async ([key, path]) => [key, await readFile(path, "utf8")])));
 
 const checks = [
@@ -43,6 +44,7 @@ const checks = [
   ["pinch zoom follows its touch point, zoom controls stay anchored to the avatar, and the avatar can be centered", files.roomView.includes("function zoomAt") && files.roomView.includes("center);") && files.roomView.includes("MAX_USER_SCALE = 3.2") && files.roomView.includes("function avatarScreenPoint()") && files.roomView.includes("function centerAvatar()") && files.roomView.includes("aria-label=\"Centralizar avatar\"") && files.game.includes("beginPanelDrag") && files.game.includes("movePanelDrag")],
   ["admin alerts use a draggable and resizable window instead of chat bubbles", files.admin.includes("onSendAlert(alert.trim())") && files.game.includes("<AdminAlertWindow") && files.adminAlert.includes("cursor-move") && files.adminAlert.includes("resize overflow-auto") && !files.admin.includes('sayAs("Alerta da Administração"')],
   ["Android build reuses the restored local toolchain, cleans stale packaging state, and preserves a versioned APK artifact", files.buildScript.includes("android-toolchain") && files.buildScript.includes("gradle-8.14.3/bin/gradle") && files.buildScript.includes('["clean", "assembleDebug"]') && files.buildScript.includes("NOIR-${versionName}.apk") && files.buildScript.includes("createHash(\"sha256\")")],
+  ["GitHub Actions restores the continuity key only outside pull requests and Gradle uses it for debug APKs", files.workflow.includes("github.event_name != 'pull_request'") && files.workflow.includes("secrets.NOIR_KEYSTORE_BASE64") && files.workflow.includes("NOIR_KEYSTORE_PATH=$RUNNER_TEMP/noir-continuity.keystore") && files.workflow.includes("secrets.NOIR_KEYSTORE_PASSWORD") && files.workflow.includes("secrets.NOIR_KEY_ALIAS") && files.workflow.includes("secrets.NOIR_KEY_PASSWORD") && files.gradle.includes('System.getenv("NOIR_KEYSTORE_PATH")') && files.gradle.includes("signingConfigs.continuity")],
 ];
 
 const failed = checks.filter(([, ok]) => !ok);
