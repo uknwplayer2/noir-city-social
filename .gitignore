@@ -1,0 +1,56 @@
+# Node / Vite
+node_modules/
+dist/
+dist-android/
+.tanstack/
+.node_modules.lock
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Local preview and tooling state
+.grok/
+.vercel/
+AGENTS.md
+.env
+.env.*
+!.env.example
+*.log
+
+# Generated captures and test output
+screenshots/*
+!screenshots/.gitkeep
+coverage/
+playwright-report/
+test-results/
+
+# Android / Gradle generated files
+android/.gradle/
+android/**/build/
+android/local.properties
+android/.idea/
+android/**/*.iml
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+android/app/src/main/res/xml/config.xml
+android/capacitor-cordova-android-plugins/
+android/build/reports/
+artifacts/*.apk
+artifacts/*.aab
+
+# Signing credentials and keys
+*.jks
+*.keystore
+*.p12
+*.pfx
+key.properties
+keystore.properties
+google-services.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Pátio">
+  <rect width="32" height="32" rx="7" fill="#111219"/>
+  <path d="M5 11 8 5l5 4 3-6 3 6 5-4 3 6-2 2H7z" fill="#d9aa68" stroke="#f1d29b" stroke-width=".7"/>
+  <path d="M8 15h16v12H8z" fill="#34252a" stroke="#d9aa68" stroke-width="1.2"/>
+  <path d="M11 18h10v9H11z" fill="#88523b"/>
+  <path d="M18 18h3v9h-3z" fill="#bc8750"/>
+  <circle cx="19.5" cy="23" r=".7" fill="#f4dcaa"/>
+</svg>

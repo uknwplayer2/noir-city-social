@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">NOIR</string>
+    <string name="title_activity_main">NOIR Social Hotel</string>
+    <string name="package_name">com.patio.noir</string>
+    <string name="custom_url_scheme">com.patio.noir</string>
+</resources>

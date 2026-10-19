@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #111219;
+  --color-surface: #201e23;
+  --color-fg: #f2eadb;
+  --color-muted: #b2a28b;
+  --color-primary: #d9aa68;
+  --color-primary-fg: #21170f;
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --radius-lg: 1rem;
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: radial-gradient(ellipse at 50% 0%, #29232a 0%, var(--color-bg) 72%);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  #root {
+    height: 100%;
+  }
+
+  button.bg-primary {
+    box-shadow: inset 0 1px 0 rgba(255, 239, 198, 0.35), 0 3px 12px rgba(145, 92, 37, 0.18);
+  }
+
+  button.bg-surface,
+  button.bg-bg {
+    border: 1px solid rgba(210, 172, 111, 0.2);
+  }
+
+  input {
+    border: 1px solid rgba(210, 172, 111, 0.22);
+  }
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bot {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+header.safe-top {
+  background: linear-gradient(180deg, rgba(13, 13, 17, 0.99), rgba(23, 21, 25, 0.96));
+  border-bottom: 1px solid rgba(214, 171, 101, 0.28);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.24);
+}
+
+@keyframes noir-splash {
+  0%, 72% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+nav.safe-bot {
+  background: linear-gradient(0deg, rgba(13, 14, 19, 0.99), rgba(28, 25, 28, 0.96));
+  border-top: 1px solid rgba(214, 171, 101, 0.28);
+}
+
+article,
+li.rounded-lg {
+  box-shadow: inset 0 1px 0 rgba(255, 230, 187, 0.035), 0 6px 18px rgba(0, 0, 0, 0.16);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-safe {
+    transition: none !important;
+  }
+}

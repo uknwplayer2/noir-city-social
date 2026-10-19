@@ -1,0 +1,106 @@
+import { getDef } from "@/game/catalog";
+import { tilesOf } from "@/game/logic";
+import type { Placed, Room } from "@/game/types";
+
+export const TILE_W = 64;
+export const TILE_H = 32;
+export const WALL_H = 108;
+
+export type Cam = { scale: number; panX: number; panY: number };
+
+export function projectRaw(x: number, y: number, z: number): [number, number] {
+  return [(x - y) * (TILE_W / 2), (x + y) * (TILE_H / 2) - z];
+}
+
+export function project(x: number, y: number, z: number, cam: Cam): [number, number] {
+  const [rx, ry] = projectRaw(x, y, z);
+  return [rx * cam.scale + cam.panX, ry * cam.scale + cam.panY];
+}
+
+export function frameCamera(
+  viewW: number,
+  viewH: number,
+  cols: number,
+  rows: number,
+  userScale: number,
+  panX: number,
+  panY: number,
+): Cam {
+  const pts = [
+    projectRaw(0, 0, WALL_H),
+    projectRaw(cols, 0, WALL_H),
+    projectRaw(0, rows, 0),
+    projectRaw(cols, rows, 0),
+  ];
+  const xs = pts.map((p) => p[0]);
+  const ys = pts.map((p) => p[1]);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const bw = Math.max(1, maxX - minX);
+  const bh = Math.max(1, maxY - minY);
+  const base = Math.min((viewW - 28) / bw, (viewH - 28) / bh);
+  const scale = base * userScale;
+  return {
+    scale,
+    panX: viewW / 2 - ((minX + maxX) / 2) * scale + panX,
+    panY: viewH / 2 - ((minY + maxY) / 2) * scale + panY,
+  };
+}
+
+export function tileAt(px: number, py: number, cam: Cam): { x: number; y: number } {
+  const dx = (px - cam.panX) / cam.scale;
+  const dy = (py - cam.panY) / cam.scale;
+  const hw = TILE_W / 2;
+  const hh = TILE_H / 2;
+  const x = (dx / hw + dy / hh) / 2;
+  const y = (dy / hh - dx / hw) / 2;
+  return { x: Math.floor(x), y: Math.floor(y) };
+}
+
+export function columnHits(
+  px: number,
+  py: number,
+  tileX: number,
+  tileY: number,
+  height: number,
+  cam: Cam,
+): boolean {
+  const steps = Math.max(1, Math.ceil(height / 8));
+  for (let i = 0; i <= steps; i++) {
+    const z = (height * i) / steps;
+    const t = tileAt(px, py + z * cam.scale, cam);
+    if (t.x === tileX && t.y === tileY) return true;
+  }
+  return false;
+}
+
+export function itemDepth(item: Placed): number {
+  const def = getDef(item.defId);
+  if (!def) return item.x + item.y;
+  const tiles = tilesOf(def, item.x, item.y, item.rot);
+  let d = 0;
+  for (const t of tiles) d = Math.max(d, t.x + t.y);
+  return d;
+}
+
+export type Pick =
+  | { kind: "item"; uid: string }
+  | { kind: "tile"; x: number; y: number }
+  | null;
+
+export function pick(px: number, py: number, room: Room, cam: Cam): Pick {
+  const items = [...room.items].sort((a, b) => itemDepth(b) - itemDepth(a) || b.y - a.y);
+  for (const it of items) {
+    const def = getDef(it.defId);
+    if (!def) continue;
+    const tiles = tilesOf(def, it.x, it.y, it.rot);
+    if (tiles.some((t) => columnHits(px, py, t.x, t.y, def.height + 12, cam))) {
+      return { kind: "item", uid: it.uid };
+    }
+  }
+  const t = tileAt(px, py, cam);
+  if (t.x >= 0 && t.y >= 0 && t.x < room.cols && t.y < room.rows) return { kind: "tile", ...t };
+  return null;
+}

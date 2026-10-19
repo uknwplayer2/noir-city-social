@@ -1,0 +1,7 @@
+Pátio para Android — build de teste
+
+1. Baixe patio-android-debug.apk para o aparelho Android.
+2. Abra o arquivo baixado e permita a instalação desta origem, se o Android solicitar.
+3. Instale e abra Pátio.
+
+Este APK de depuração é para teste manual e está assinado com uma chave de debug. O jogo carrega seus arquivos localmente e salva o progresso no aparelho.
