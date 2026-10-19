@@ -80,6 +80,10 @@ export type Placed = {
   y: number;
   rot: Rot;
   mirror?: boolean;
+  /** Height of this item above the room floor, in game units. */
+  z?: number;
+  /** UID of the stackable item that supports this item. */
+  supportUid?: string;
 };
 
 export type InvItem = {
@@ -106,6 +110,8 @@ export type Room = {
   floorId: string;
   wallId: string;
   pattern: Pattern;
+  /** Diagonal walking is opt-in and stored per room. */
+  diagonalMovement?: boolean;
   items: Placed[];
   occupants: Occupant[];
 };
@@ -114,6 +120,7 @@ export type Avatar = {
   x: number;
   y: number;
   dir: Rot;
+  z?: number;
 };
 
 export type Look = {
@@ -132,7 +139,7 @@ export type Swatch = {
   alt: string;
 };
 
-export type Tile = { x: number; y: number };
+export type Tile = { x: number; y: number; z?: number };
 
 export type Tool = "walk" | "edit";
 

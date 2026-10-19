@@ -25,6 +25,7 @@ const rug: Trio = { top: "#f0e2cc", left: "#d8c6ac", right: "#c2ad90" };
 const stripe: Trio = { top: "#e07a45", left: "#c46234", right: "#a34e28" };
 const mat: Trio = { top: "#8d5a3c", left: "#744830", right: "#5c3824" };
 const cream: Trio = { top: "#f6efe2", left: "#e6dccb", right: "#d4c6b0" };
+const stone: Trio = { top: "#aaa69e", left: "#817d77", right: "#625e59" };
 const sofaFrames: [SpriteFrame, SpriteFrame, SpriteFrame, SpriteFrame] = [
   { x: 0, y: 0, width: 640, height: 640 },
   { x: 640, y: 0, width: 640, height: 640 },
@@ -75,8 +76,8 @@ function def(partial: Omit<FurniDef, "height" | "blocks"> & { blocks?: boolean }
     ...partial,
     blocks: partial.blocks ?? partial.layer === "object",
     height: heightOf(partial.pieces),
-    stackHeight: partial.stackHeight ?? heightOf(partial.pieces) * 0.35,
-    canStack: partial.canStack ?? partial.layer === "object",
+    stackHeight: partial.stackHeight ?? heightOf(partial.pieces),
+    canStack: partial.canStack ?? false,
     canSit: partial.canSit ?? false,
     canLay: partial.canLay ?? false,
     isWalkable: partial.isWalkable ?? false,
@@ -247,6 +248,7 @@ export const CATALOG: FurniDef[] = [
     w: 2,
     d: 1,
     layer: "object",
+    canStack: true,
     pieces: tablePieces(2, 1, 14),
   }),
   def({
@@ -258,6 +260,7 @@ export const CATALOG: FurniDef[] = [
     w: 1,
     d: 1,
     layer: "object",
+    canStack: true,
     pieces: tablePieces(1, 1, 16),
   }),
   def({
@@ -269,6 +272,7 @@ export const CATALOG: FurniDef[] = [
     w: 2,
     d: 1,
     layer: "object",
+    canStack: true,
     pieces: [
       box(0.1, 0.22, 0.12, 0.52, 0, 16, woodDark),
       box(1.78, 0.22, 0.12, 0.52, 0, 16, woodDark),
@@ -303,6 +307,7 @@ export const CATALOG: FurniDef[] = [
     w: 1,
     d: 1,
     layer: "object",
+    canStack: true,
     pieces: [
       box(0.08, 0.16, 0.12, 0.68, 0, 50, wood),
       box(0.8, 0.16, 0.12, 0.68, 0, 50, wood),
@@ -408,9 +413,10 @@ export const CATALOG: FurniDef[] = [
     pieces: [box(0.12, 0.12, 0.76, 0.76, 0, 32, dark)],
   }),
   def({ id: "rooftop-pool", name: "Piscina Rooftop", blurb: "Piscina oficial do Rooftop Night", category: "decor", price: 0, w: 4, d: 4, layer: "object", adminOnly: true, sprite: rooftopPool, pieces: [box(0, 0, 4, 4, 0, 42, dark)] }),
-  def({ id: "rooftop-bar", name: "Sky Bar", blurb: "Bar oficial do Rooftop Night", category: "mesa", price: 0, w: 4, d: 4, layer: "object", adminOnly: true, sprite: rooftopBar, pieces: [box(0, 0, 4, 4, 0, 48, woodDark)] }),
+  def({ id: "rooftop-bar", name: "Sky Bar", blurb: "Bar oficial do Rooftop Night", category: "mesa", price: 0, w: 4, d: 4, layer: "object", canStack: true, stackHeight: 48, adminOnly: true, sprite: rooftopBar, pieces: [box(0, 0, 4, 4, 0, 48, woodDark)] }),
   def({ id: "rooftop-sofa", name: "Sofá Rooftop", blurb: "Lounge oficial do Rooftop Night", category: "assento", price: 0, w: 4, d: 2, layer: "object", adminOnly: true, sprite: noirSofaSprites, spriteFrames: sofaFrames, spriteScale: 1.12, pieces: [box(0, 0, 4, 2, 0, 34, clothDeep)] }),
-  def({ id: "rooftop-table", name: "Mesa Rooftop", blurb: "Mesa oficial do Rooftop Night", category: "mesa", price: 0, w: 2, d: 2, layer: "object", adminOnly: true, sprite: rooftopTable, pieces: [box(0, 0, 2, 2, 0, 28, woodDark)] }),
+  def({ id: "rooftop-table", name: "Mesa Rooftop", blurb: "Mesa oficial do Rooftop Night", category: "mesa", price: 0, w: 2, d: 2, layer: "object", canStack: true, stackHeight: 28, adminOnly: true, sprite: rooftopTable, pieces: [box(0, 0, 2, 2, 0, 28, woodDark)] }),
+  def({ id: "bloco-noir", name: "Bloco Noir", blurb: "Empilhe para construir", category: "decor", price: 8, w: 1, d: 1, layer: "object", canStack: true, stackHeight: 20, pieces: [box(0.04, 0.04, 0.92, 0.92, 0, 20, stone)] }),
   def({ id: "rooftop-planter", name: "Jardineira Rooftop", blurb: "Jardineira oficial do Rooftop Night", category: "planta", price: 0, w: 1, d: 1, layer: "object", adminOnly: true, sprite: rooftopPlanter, pieces: [box(0, 0, 1, 1, 0, 60, leafDeep)] }),
 ];
 

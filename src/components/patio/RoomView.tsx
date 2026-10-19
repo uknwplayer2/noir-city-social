@@ -7,7 +7,7 @@ import { blip, unlockAudio } from "@/game/audio";
 import { getDef } from "@/game/catalog";
 import { drawScene, type Ghost } from "@/game/draw";
 import { frameCamera, pick, project, tileAt, type Cam, type Pick } from "@/game/iso";
-import { canPlace, nearestFree, tilesOf } from "@/game/logic";
+import { canPlace, nearestFree, stackSurfaceHeight, tilesOf, walkSurfaceAt } from "@/game/logic";
 import { getNexoActor, resetNexo, tickNexo } from "@/game/nexo";
 import { avatarTiles, requestSeat, requestWalk, resetSim, sim, tickSim } from "@/game/sim";
 import { useGame, type GameState } from "@/game/store";
@@ -39,12 +39,14 @@ function ghostOf(s: GameState): Ghost | null {
     const inv = s.inventory.find((i) => i.uid === s.armedUid);
     const def = inv ? getDef(inv.defId) : null;
     if (!inv || !def || !sim.hover) return null;
+    const support = sim.hoverStackUid ? s.room.items.find((item) => item.uid === sim.hoverStackUid) : undefined;
     return {
       defId: inv.defId,
       x: sim.hover.x,
       y: sim.hover.y,
       rot: s.armedRot,
-      ok: canPlace(s.room, def, sim.hover.x, sim.hover.y, s.armedRot, undefined, occupied),
+      z: support ? stackSurfaceHeight(support) : 0,
+      ok: canPlace(s.room, def, sim.hover.x, sim.hover.y, s.armedRot, undefined, occupied, support?.uid),
     };
   }
   if (s.movingUid) {
@@ -53,12 +55,14 @@ function ghostOf(s: GameState): Ghost | null {
     if (!item || !def) return null;
     const x = sim.hover?.x ?? item.x;
     const y = sim.hover?.y ?? item.y;
+    const support = sim.hoverStackUid ? s.room.items.find((candidate) => candidate.uid === sim.hoverStackUid) : undefined;
     return {
       defId: item.defId,
       x,
       y,
       rot: s.movingRot,
-      ok: canPlace(s.room, def, x, y, s.movingRot, item.uid, occupied),
+      z: support ? stackSurfaceHeight(support) : item.z ?? 0,
+      ok: canPlace(s.room, def, x, y, s.movingRot, item.uid, occupied, support?.uid, support ? undefined : item.z),
     };
   }
   return null;
@@ -183,6 +187,7 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
           {
             x: sim.x,
             y: sim.y,
+            z: sim.z,
             dir: sim.dir,
             facing: sim.facing,
             phase: sim.phase,
@@ -246,7 +251,7 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
   }
 
   function avatarScreenPoint() {
-    const [x, y] = project(sim.x, sim.y, 0, camRef.current);
+    const [x, y] = project(sim.x, sim.y, sim.z, camRef.current);
     return { x, y };
   }
 
@@ -268,7 +273,7 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
       view.current.panX,
       view.current.panY,
     );
-    const [avatarX, avatarY] = project(sim.x, sim.y, 26, camera);
+    const [avatarX, avatarY] = project(sim.x, sim.y, sim.z + 26, camera);
     view.current.panX += size.current.w / 2 - avatarX;
     view.current.panY += size.current.h * 0.58 - avatarY;
   }
@@ -297,11 +302,13 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     e.currentTarget.setPointerCapture(e.pointerId);
     const p = local(e);
     pointers.current.set(e.pointerId, p);
-    const hit = pick(p.x, p.y, useGame.getState().room, camRef.current);
+    const room = useGame.getState().room;
+    const hit = pick(p.x, p.y, room, camRef.current);
+    updatePlacementHover(p, room, hit);
     drag.current = { id: e.pointerId, moved: false, long: false, hit, dist: 0 };
     window.clearTimeout(timer.current);
     const s = useGame.getState();
-    const [avatarX, avatarY] = project(sim.x, sim.y, 26, camRef.current);
+    const [avatarX, avatarY] = project(sim.x, sim.y, sim.z + 26, camRef.current);
     const onAvatar = Math.hypot(p.x - avatarX, p.y - avatarY) < 18 * camRef.current.scale;
     if (!onAvatar && hit?.kind === "item" && !s.homeState && !s.armedUid && !s.movingUid) {
       const uid = hit.uid;
@@ -334,8 +341,8 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
       return;
     }
     const room = useGame.getState().room;
-    const t = tileAt(p.x, p.y, camRef.current);
-    sim.hover = t.x >= 0 && t.y >= 0 && t.x < room.cols && t.y < room.rows ? t : null;
+    const hit = pick(p.x, p.y, room, camRef.current);
+    updatePlacementHover(p, room, hit);
     const d = drag.current;
     if (!d || d.id !== e.pointerId) return;
     d.dist += Math.hypot(e.movementX, e.movementY);
@@ -348,6 +355,16 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     }
   }
 
+  function updatePlacementHover(p: { x: number; y: number }, room: GameState["room"], hit: Pick) {
+    const target = hit?.kind === "item" ? room.items.find((item) => item.uid === hit.uid) : undefined;
+    const targetDef = target ? getDef(target.defId) : null;
+        const support = target && (targetDef?.canStack || targetDef?.isWalkable) && target.uid !== useGame.getState().movingUid ? target : undefined;
+    const z = support ? stackSurfaceHeight(support) : 0;
+    const tile = tileAt(p.x, p.y + z * camRef.current.scale, camRef.current);
+    sim.hover = tile.x >= 0 && tile.y >= 0 && tile.x < room.cols && tile.y < room.rows ? tile : null;
+    sim.hoverStackUid = support?.uid ?? null;
+  }
+
   function onPointerUp(e: ReactPointerEvent<HTMLCanvasElement>) {
     pointers.current.delete(e.pointerId);
     if (pointers.current.size < 2) pinch.current = null;
@@ -357,7 +374,7 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     if (!d || d.id !== e.pointerId || d.moved || d.long || !sim.booted) return;
     if (swallowTap()) return;
     const pos = local(e);
-    const [avatarX, avatarY] = project(sim.x, sim.y, 26, camRef.current);
+    const [avatarX, avatarY] = project(sim.x, sim.y, sim.z + 26, camRef.current);
     const isAvatarTap = Math.hypot(pos.x - avatarX, pos.y - avatarY) < 16 * camRef.current.scale;
     if (isAvatarTap) {
       const state = useGame.getState();
@@ -383,7 +400,16 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
   function act(hit: Pick, p: { x: number; y: number }) {
     const s = useGame.getState();
     const room = s.room;
-    const t = tileAt(p.x, p.y, camRef.current);
+    const target = hit?.kind === "item" ? room.items.find((item) => item.uid === hit.uid) : undefined;
+    const targetDef = target ? getDef(target.defId) : null;
+    const support = target && (targetDef?.canStack || targetDef?.isWalkable) && target.uid !== s.movingUid ? target : undefined;
+    const supportUid = support?.uid;
+    const stackZ = support
+      ? stackSurfaceHeight(support)
+      : target && targetDef?.layer === "floor"
+        ? (target.z ?? 0) + targetDef.height
+        : 0;
+    const t = tileAt(p.x, p.y + stackZ * camRef.current.scale, camRef.current);
     const inside = t.x >= 0 && t.y >= 0 && t.x < room.cols && t.y < room.rows;
     if (s.armedUid || s.movingUid) {
       if (!inside) {
@@ -391,7 +417,7 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
         blip("no");
         return;
       }
-      const ok = s.armedUid ? s.placeArmed(t.x, t.y, avatarTiles()) : s.moveSelected(t.x, t.y, avatarTiles());
+      const ok = s.armedUid ? s.placeArmed(t.x, t.y, avatarTiles(), supportUid) : s.moveSelected(t.x, t.y, avatarTiles(), supportUid);
       blip(ok ? "ok" : "no");
       return;
     }
@@ -408,17 +434,21 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
         blip(ok ? "ok" : "no");
         return;
       }
+      if (item && def && (def.canStack || def.isWalkable) && inside) {
+        if (!requestWalk(t, walkSurfaceAt(room, t.x, t.y))) blip("no");
+        return;
+      }
       if (item && def && !def.blocks && inside) {
-        if (!requestWalk(t)) blip("no");
+        if (!requestWalk(t, walkSurfaceAt(room, t.x, t.y))) blip("no");
         return;
       }
       if (item && def) {
         const spot = nearestFree(room, tilesOf(def, item.x, item.y, item.rot));
-        if (!spot || !requestWalk(spot)) blip("no");
+        if (!spot || !requestWalk(spot, walkSurfaceAt(room, spot.x, spot.y))) blip("no");
         return;
       }
     }
-    if (inside && !requestWalk(t)) blip("no");
+    if (inside && !requestWalk(t, walkSurfaceAt(room, t.x, t.y))) blip("no");
   }
 
   function zoom(by: number) { zoomAt(by, avatarScreenPoint()); }

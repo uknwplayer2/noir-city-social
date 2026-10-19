@@ -1,6 +1,6 @@
 import { useGame } from "@/game/store";
 import { BUBBLE_LIFETIME_MS } from "@/game/bubbles";
-import { doorTile, findPath, findSeatAt, isBlocked, neighbors, tilesOf } from "@/game/logic";
+import { doorTile, findPath, findSeatAt, findWalkPath, isBlocked, isBlockedAtHeight, neighbors, tilesOf, walkSurfaceAt } from "@/game/logic";
 import { getDef } from "@/game/catalog";
 import type { Facing, Rot, Tile } from "@/game/types";
 
@@ -9,6 +9,7 @@ const SPEED = 2.7;
 export type Sim = {
   x: number;
   y: number;
+  z: number;
   dir: Rot;
   facing: Facing;
   path: Tile[];
@@ -17,6 +18,7 @@ export type Sim = {
   bubbles: { id: number; text: string; author: string; x: number; y: number; age: number; duration: number }[];
   handsPocket: boolean;
   hover: Tile | null;
+  hoverStackUid: string | null;
   booted: boolean;
   state: "idle" | "walk" | "sit" | "lay" | "dance";
   sitUid: string | null;
@@ -28,6 +30,7 @@ export type Sim = {
 export const sim: Sim = {
   x: 4.5,
   y: 6.5,
+  z: 0,
   dir: 3,
   facing: 0,
   path: [],
@@ -36,6 +39,7 @@ export const sim: Sim = {
   bubbles: [],
   handsPocket: false,
   hover: null,
+  hoverStackUid: null,
   booted: false,
   state: "idle",
   sitUid: null,
@@ -44,13 +48,15 @@ export const sim: Sim = {
   standPosition: null,
 };
 
-export function resetSim(avatar: { x: number; y: number; dir: Rot }): void {
+export function resetSim(avatar: { x: number; y: number; dir: Rot; z?: number }): void {
   sim.x = avatar.x + 0.5;
   sim.y = avatar.y + 0.5;
+  sim.z = avatar.z ?? 0;
   sim.dir = avatar.dir;
   sim.bubbles = [];
   sim.facing = ([2, 4, 6, 0][avatar.dir] ?? 4) as Facing;
   sim.path = [];
+  sim.hoverStackUid = null;
   sim.state = "idle";
   sim.sitUid = null;
   sim.danceId = 0;
@@ -141,7 +147,7 @@ export function requestSeat(uid: string): boolean {
   const start = { x: Math.floor(sim.x), y: Math.floor(sim.y) };
   let best: { path: Tile[]; tile: Tile } | null = null;
   for (const tile of candidates.values()) {
-    const path = findPath(room, start, tile);
+    const path = findPath(room, start, tile, room.diagonalMovement === true);
     if (path && (!best || path.length < best.path.length)) best = { path, tile };
   }
   if (!best) {
@@ -191,13 +197,14 @@ export function sayAs(
   sim.bubbles.push({ id: ++bubbleId, text: clean, author, x: position?.x ?? sim.x, y: position?.y ?? sim.y, age: 0, duration: BUBBLE_LIFETIME_MS });
 }
 
-export function requestWalk(goal: Tile): boolean {
+export function requestWalk(goal: Tile, goalZ?: number): boolean {
   standUp();
   stopDance();
   sim.pendingSeatUid = null;
   const room = useGame.getState().room;
-  const start = { x: Math.floor(sim.x), y: Math.floor(sim.y) };
-  const path = findPath(room, start, goal);
+  const start = { x: Math.floor(sim.x), y: Math.floor(sim.y), z: sim.z };
+  const targetZ = goalZ ?? goal.z ?? walkSurfaceAt(room, goal.x, goal.y);
+  const path = findWalkPath(room, start, { ...goal, z: targetZ }, targetZ);
   if (!path) {
     useGame.getState().setToast("Sem caminho até lá");
     return false;
@@ -232,14 +239,14 @@ export function tickSim(dt: number): void {
   const tile = { x: Math.floor(sim.x), y: Math.floor(sim.y) };
   if (!sim.booted) return;
   if (sim.state === "sit" || sim.state === "lay" || sim.state === "dance") return;
-  if (tile.x < 0 || tile.y < 0 || tile.x >= room.cols || tile.y >= room.rows || isBlocked(room.items, tile.x, tile.y)) {
+  if (tile.x < 0 || tile.y < 0 || tile.x >= room.cols || tile.y >= room.rows || isBlockedAtHeight(room.items, tile.x, tile.y, sim.z)) {
     const avatar = useGame.getState().avatar;
     resetSim(avatar);
     return;
   }
   if (!sim.path.length) return;
   const next = sim.path[0];
-  if (isBlocked(room.items, next.x, next.y)) {
+  if (isBlockedAtHeight(room.items, next.x, next.y, next.z ?? sim.z)) {
     sim.path = [];
     sim.state = "idle";
     sim.pendingSeatUid = null;
@@ -250,20 +257,22 @@ export function tickSim(dt: number): void {
   const ty = next.y + 0.5;
   const dx = tx - sim.x;
   const dy = ty - sim.y;
+  const dz = (next.z ?? sim.z) - sim.z;
   const dist = Math.hypot(dx, dy);
   if (dx !== 0 || dy !== 0) {
     sim.facing = facingFromDelta(dx, dy);
     if (Math.abs(dx) > Math.abs(dy)) sim.dir = dx > 0 ? 0 : 2;
     else sim.dir = dy > 0 ? 1 : 3;
   }
-  if (dist < 0.02) {
+  if (dist < 0.02 && Math.abs(dz) < 0.5) {
     sim.x = tx;
     sim.y = ty;
+    sim.z = next.z ?? sim.z;
     sim.path.shift();
     if (!sim.path.length) {
       sim.state = "idle";
       const landed = { x: Math.floor(sim.x), y: Math.floor(sim.y) };
-      useGame.getState().setAvatarTile(landed.x, landed.y, sim.dir);
+      useGame.getState().setAvatarTile(landed.x, landed.y, sim.dir, sim.z);
       if (sim.pendingSeatUid) sitOn(sim.pendingSeatUid);
       const door = doorTile(room);
       if (landed.x === door.x && landed.y === door.y) {
@@ -272,9 +281,12 @@ export function tickSim(dt: number): void {
     }
     return;
   }
-  const step = Math.min(dist, SPEED * dt);
-  sim.x += (dx / dist) * step;
-  sim.y += (dy / dist) * step;
+  const horizontalProgress = dist < 0.02 ? 1 : Math.min(1, (SPEED * dt) / dist);
+  const verticalProgress = Math.abs(dz) < 0.5 ? 1 : Math.min(1, (SPEED * 10 * dt) / Math.abs(dz));
+  const progress = Math.min(horizontalProgress, verticalProgress);
+  sim.x += dx * progress;
+  sim.y += dy * progress;
+  sim.z += dz * progress;
 }
 
 export function avatarTiles(): Tile[] {

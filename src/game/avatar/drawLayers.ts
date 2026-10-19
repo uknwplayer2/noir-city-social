@@ -33,6 +33,7 @@ export function drawLayeredAvatar(
     pose?: LayerPose;
     phase?: number;
     facing?: number;
+    z?: number;
     name?: string;
     handsPocket?: boolean;
   } = {},
@@ -46,14 +47,15 @@ export function drawLayeredAvatar(
   const walkBob = pose === "walk" && !reduce ? Math.sin(phase) * 1.6 : 0;
   const bob = danceBounce + walkBob;
 
-  const [sx, sy] = project(x, y, bob - sitDrop, cam);
+  const baseZ = opts.z ?? 0;
+  const [sx, sy] = project(x, y, baseZ + bob - sitDrop, cam);
   const u = cam.scale;
   const h = 57 * u * (pose === "sit" ? 0.78 : pose === "lay" ? 0.46 : 1);
 
   // sombra
   ctx.save();
   ctx.fillStyle = "rgba(0,0,0,0.35)";
-  const ground = project(x, y, 0, cam);
+  const ground = project(x, y, baseZ, cam);
   ctx.beginPath();
   ctx.ellipse(ground[0], ground[1], 10 * u, 4 * u, 0, 0, Math.PI * 2);
   ctx.fill();
@@ -87,6 +89,9 @@ export function drawLayeredAvatar(
         ctx.drawImage(img, frame.x, frame.y, frame.w, frame.h, -drawW / 2, -h * 0.85, drawW, drawH);
         continue;
       }
+      // A sprite-backed body is authoritative. Do not flash the old procedural
+      // mannequin over it while the image is still loading.
+      if (slot === "body") continue;
     }
 
     if (def.color) {
@@ -103,7 +108,7 @@ export function drawLayeredAvatar(
 
   // nome
   if (opts.name) {
-    const [nx, ny] = project(x, y, 52, cam);
+    const [nx, ny] = project(x, y, baseZ + 52, cam);
     ctx.save();
     ctx.font = `600 ${Math.max(10, 11 * u)}px system-ui, sans-serif`;
     ctx.textAlign = "center";

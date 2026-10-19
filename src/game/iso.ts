@@ -77,11 +77,13 @@ function columnHitHeight(
   tileY: number,
   height: number,
   cam: Cam,
+  baseHeight = 0,
 ): number | null {
   const steps = Math.max(1, Math.ceil(height / 4));
   let highestHit: number | null = null;
   for (let i = 0; i <= steps; i++) {
-    const z = (height * i) / steps;
+    const localZ = (height * i) / steps;
+    const z = baseHeight + localZ;
     const t = tileAt(px, py + z * cam.scale, cam);
     if (t.x === tileX && t.y === tileY && (highestHit === null || z > highestHit)) highestHit = z;
   }
@@ -134,12 +136,13 @@ export function pick(px: number, py: number, room: Room, cam: Cam): Pick {
       : def.height + Math.max(8, def.height * 0.15);
     let hitHeight: number | null = null;
     for (const tile of tiles) {
-      const z = columnHitHeight(px, py, tile.x, tile.y, testHeight, cam);
+      const z = columnHitHeight(px, py, tile.x, tile.y, testHeight, cam, it.z ?? 0);
       if (z !== null && (hitHeight === null || z > hitHeight)) hitHeight = z;
     }
     if (hitHeight === null) continue;
 
-    if (floorish && hitHeight > Math.max(6, def.height + 2)) continue;
+    const localHitHeight = hitHeight - (it.z ?? 0);
+    if (floorish && localHitHeight > Math.max(6, def.height + 2)) continue;
 
     const rank = layerRank(def);
     const depth = itemDepth(it);

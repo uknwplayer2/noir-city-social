@@ -3,7 +3,7 @@ import type { Room } from "@/game/types";
 /** Room-grid anchors; swapping x and y mirrors the isometric centerline. */
 export function createRooftopNightRoom(): Room {
   return {
-    name: "Rooftop Night", cols: 16, rows: 16, floorId: "ardosia", wallId: "noite", pattern: "lajota", occupants: [],
+    name: "Rooftop Night", cols: 16, rows: 16, floorId: "ardosia", wallId: "noite", pattern: "lajota", diagonalMovement: false, occupants: [],
     items: [
       { uid: "rt-pool", defId: "rooftop-pool", x: 1, y: 5, rot: 0 },
       { uid: "rt-bar", defId: "rooftop-bar", x: 5, y: 1, rot: 0 },

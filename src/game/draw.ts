@@ -1,6 +1,7 @@
 import { getDef, getFloor, getLook, getWall } from "@/game/catalog";
 import { itemDepth, project, TILE_H, TILE_W, WALL_H, type Cam } from "@/game/iso";
 import { dims, doorTile, mapPoint, tilesOf } from "@/game/logic";
+import { getLayer } from "@/game/avatar/catalog";
 import { drawLayeredAvatar } from "@/game/avatar/drawLayers";
 import { isLegacyLookFigure, type AvatarFigure } from "@/game/avatar/layers";
 import { getBubbleSpeed, getBubbleStyle, type BubbleSizeId, type BubbleSpeedId, type BubbleStyleId } from "@/game/bubbles";
@@ -20,11 +21,13 @@ export type Ghost = {
   y: number;
   rot: Rot;
   ok: boolean;
+  z?: number;
 };
 
 export type ActorDraw = {
   x: number;
   y: number;
+  z?: number;
   dir: Rot;
   facing?: Facing;
   phase: number;
@@ -145,39 +148,41 @@ export function drawScene(
     const def = getDef(item.defId);
     if (!def) continue;
     ents.push({
-      depth: def.layer === "floor" ? item.x + item.y - 0.5 : itemDepth(item),
+      depth: (def.layer === "floor" ? item.x + item.y - 0.5 : itemDepth(item)) + (item.z ?? 0) * 0.001,
       layer: def.layer === "floor" ? 0 : 2,
-      draw: () => drawPlaced(ctx, def, item.x, item.y, item.rot, cam, 1, true, 0.72, item.mirror ?? false),
+      draw: () => drawPlaced(ctx, def, item.x, item.y, item.rot, cam, 1, true, 0.72, item.mirror ?? false, item.z ?? 0),
     });
   }
 
   if (opts.ghost) {
     const def = getDef(opts.ghost.defId);
     if (def) {
-      const fake: Placed = { uid: "ghost", defId: def.id, x: opts.ghost.x, y: opts.ghost.y, rot: opts.ghost.rot };
+      const fake: Placed = { uid: "ghost", defId: def.id, x: opts.ghost.x, y: opts.ghost.y, rot: opts.ghost.rot, z: opts.ghost.z ?? 0 };
       ents.push({
-        depth: itemDepth(fake) + 0.1,
+        depth: itemDepth(fake) + (fake.z ?? 0) * 0.001 + 0.1,
         layer: 2,
-        draw: () => drawPlaced(ctx, def, opts.ghost!.x, opts.ghost!.y, opts.ghost!.rot, cam, 0.62, opts.ghost!.ok),
+        draw: () => drawPlaced(ctx, def, opts.ghost!.x, opts.ghost!.y, opts.ghost!.rot, cam, 0.62, opts.ghost!.ok, 0.72, false, opts.ghost!.z ?? 0),
       });
     }
   }
 
   ents.push({
-    depth: actor.x + actor.y,
+    depth: actor.x + actor.y + (actor.z ?? 0) * 0.001,
     layer: 3,
     draw: () => {
-      if (actor.figure && !isLegacyLookFigure(actor.figure, actor.lookId)) {
+      const bodyHasSprite = Boolean(actor.figure && getLayer(actor.figure.body)?.sprite);
+      if (actor.figure && (bodyHasSprite || !isLegacyLookFigure(actor.figure, actor.lookId))) {
         drawLayeredAvatar(ctx, actor.x, actor.y, actor.figure, cam, {
           pose: actor.state ?? (actor.walking ? "walk" : "idle"),
           phase: actor.phase,
           facing: actor.facing,
+          z: actor.z ?? 0,
           name: actor.name,
           handsPocket: actor.handsPocket,
         });
         return;
       }
-      drawAvatar(ctx, actor.x, actor.y, actor.dir, actor.phase, actor.walking, getLook(actor.lookId), actor.name, actor.handsPocket, cam, actor.facing, actor.state, actor.danceId);
+      drawAvatar(ctx, actor.x, actor.y, actor.dir, actor.phase, actor.walking, getLook(actor.lookId), actor.name, actor.handsPocket, cam, actor.facing, actor.state, actor.danceId, actor.z ?? 0);
     },
   });
 
@@ -203,7 +208,7 @@ export function drawScene(
   for (const e of ents) e.draw();
   const bubbleRiseSpeed = getBubbleSpeed(actor.bubbleSpeed).pixelsPerSecond * (actor.bubbleSpeedBoost ? 2 : 1);
   for (const bubble of actor.bubbles as { text: string; author: string; x: number; y: number; age: number; duration: number }[]) {
-    const [bx, by] = project(bubble.x, bubble.y, 67, cam);
+    const [bx, by] = project(bubble.x, bubble.y, 67 + (actor.z ?? 0), cam);
     const drift = bubble.age * bubbleRiseSpeed;
     drawBubble(ctx, bx, by - drift, `${bubble.author}: ${bubble.text}`, actor.bubbleStyle, actor.bubbleSize);
   }
@@ -484,9 +489,10 @@ export function drawPlaced(
   ok = true,
   renderScale = 0.72,
   mirror = false,
+  baseZ = 0,
 ): void {
   const { w, d } = dims(def, rot);
-  const [sx, sy] = project(ax + w / 2, ay + d / 2, 1, cam);
+  const [sx, sy] = project(ax + w / 2, ay + d / 2, baseZ + 1, cam);
   ctx.save();
   ctx.fillStyle = "rgba(40, 24, 12, 0.2)";
   ctx.beginPath();
@@ -494,7 +500,7 @@ export function drawPlaced(
   ctx.fill();
   ctx.restore();
 
-  const center = project(ax + w / 2, ay + d / 2, 0, cam);
+  const center = project(ax + w / 2, ay + d / 2, baseZ, cam);
   if (def.sprite) {
     const image = furnitureImage(def.sprite);
     if (image) {
@@ -516,7 +522,7 @@ export function drawPlaced(
   ctx.translate(center[0], center[1]);
   ctx.scale(renderScale, renderScale);
   ctx.translate(-center[0], -center[1]);
-  for (const piece of pieces) drawPiece(ctx, piece, rot, def.w, def.d, ax, ay, cam, alpha, ok);
+  for (const piece of pieces) drawPiece(ctx, piece, rot, def.w, def.d, ax, ay, cam, alpha, ok, baseZ);
   ctx.restore();
 }
 
@@ -550,6 +556,7 @@ function drawPiece(
   cam: Cam,
   alpha: number,
   ok: boolean,
+  baseZ: number,
 ): void {
   ctx.save();
   ctx.globalAlpha = alpha;
@@ -563,8 +570,8 @@ function drawPiece(
       const [mx, my] = mapPoint(lx, ly, rot, w, d);
       return [ax + mx, ay + my];
     });
-    const top = pts.map((p) => project(p[0], p[1], piece.z + piece.h, cam));
-    const bot = pts.map((p) => project(p[0], p[1], piece.z, cam));
+    const top = pts.map((p) => project(p[0], p[1], baseZ + piece.z + piece.h, cam));
+    const bot = pts.map((p) => project(p[0], p[1], baseZ + piece.z, cam));
     const cx = (top[0][0] + top[1][0] + top[2][0] + top[3][0]) / 4;
     const faces = [0, 1, 2, 3]
       .map((i) => {
@@ -583,8 +590,8 @@ function drawPiece(
     drawSurfaceDetail(ctx, top, cam, piece.x + piece.y + piece.z);
   } else if (piece.kind === "pot") {
     const [mx, my] = mapPoint(piece.cx, piece.cy, rot, w, d);
-    const b = project(ax + mx, ay + my, piece.z, cam);
-    const t = project(ax + mx, ay + my, piece.z + piece.h, cam);
+    const b = project(ax + mx, ay + my, baseZ + piece.z, cam);
+    const t = project(ax + mx, ay + my, baseZ + piece.z + piece.h, cam);
     const rx = piece.r * (TILE_W / 2) * cam.scale;
     const ry = piece.r * (TILE_H / 2) * cam.scale;
     const topRx = rx * 0.92;
@@ -608,7 +615,7 @@ function drawPiece(
     }
   } else {
     const [mx, my] = mapPoint(piece.cx, piece.cy, rot, w, d);
-    const p = project(ax + mx, ay + my, piece.z, cam);
+    const p = project(ax + mx, ay + my, baseZ + piece.z, cam);
     ctx.fillStyle = ok ? piece.color : "rgba(224, 112, 112, 0.85)";
     ctx.beginPath();
     ctx.ellipse(p[0], p[1], piece.rx * (TILE_W / 2) * cam.scale, piece.ry * (TILE_H / 2) * cam.scale, 0, 0, Math.PI * 2);
@@ -679,12 +686,13 @@ export function drawAvatar(
   facingOverride?: Facing,
   pose: ActorDraw["state"] = "idle",
   danceId = 1,
+  baseZ = 0,
 ): void {
   const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   const danceBounce = pose === "dance" && !reduce ? Math.abs(Math.sin(phase * (7 + danceId))) * 2.5 : 0;
   const bob = reduce ? 0 : danceBounce + Math.sin(phase) * (walking ? 1.6 : 0.6);
-  const feet = project(x, y, bob, cam);
-  const ground = project(x, y, 0, cam);
+  const feet = project(x, y, baseZ + bob, cam);
+  const ground = project(x, y, baseZ, cam);
   const u = cam.scale;
   const step = walking && !reduce ? Math.sin(phase * 2) * 3 * u : 0;
   const face = dir === 0 || dir === 3 ? 1 : -1;

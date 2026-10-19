@@ -6,7 +6,7 @@ import { DEFAULT_FIGURE, figureFromLookId, type AvatarFigure, type LayerSlot } f
 import { getBubbleStyle, getBubbleSize, getBubbleSpeed, type BubbleSizeId, type BubbleSpeedId, type BubbleStyleId } from "@/game/bubbles";
 import { createRooftopNightRoom } from "@/game/roomLayouts";
 import { createNexoOccupant } from "@/game/nexo";
-import { canPlace, normRot, relayout, repairSave } from "@/game/logic";
+import { canPlace, detachStackChildren, hasStackedChildren, normRot, relayout, repairSave, stackSurfaceHeight, stackTopHeight } from "@/game/logic";
 import type { Avatar, InternalMail, InvItem, Pattern, Quest, Room, Rot, SaveData, Tile, Tool, UserRole } from "@/game/types";
 import { SAVE_VERSION } from "@/game/types";
 
@@ -46,8 +46,8 @@ export type GameState = SaveData & {
   rotatePreview: () => boolean;
   beginMove: (uid: string) => void;
   cancelMove: () => void;
-  placeArmed: (x: number, y: number, occupied: Tile[]) => boolean;
-  moveSelected: (x: number, y: number, occupied: Tile[]) => boolean;
+  placeArmed: (x: number, y: number, occupied: Tile[], supportUid?: string) => boolean;
+  moveSelected: (x: number, y: number, occupied: Tile[], supportUid?: string) => boolean;
   pickup: (uid: string) => boolean;
   buy: (defId: string) => boolean;
   sell: (invUid: string) => boolean;
@@ -55,8 +55,9 @@ export type GameState = SaveData & {
   setWall: (id: string) => void;
   setPattern: (pattern: Pattern) => void;
   setRoomName: (name: string) => void;
+  setDiagonalMovement: (enabled: boolean) => void;
   setLayout: (cols: number, rows: number) => number;
-  setAvatarTile: (x: number, y: number, dir: Rot) => void;
+  setAvatarTile: (x: number, y: number, dir: Rot, z?: number) => void;
   resetAll: () => void;
   setToast: (toast: string | null) => void;
   clearToast: () => void;
@@ -93,6 +94,7 @@ export function createInitial(): Omit<SaveData, "figure" | "bubbleStyle" | "bubb
     floorId: "ardosia",
     wallId: "noite",
     pattern: "lajota",
+    diagonalMovement: false,
     occupants: [createNexoOccupant()],
     items: [
       { uid: "st-shelf", defId: "estante", x: 1, y: 1, rot: 0 },
@@ -274,7 +276,7 @@ export const useGame = create<GameState>()(
         if (get().homeState) return;
         const item = get().inventory.find((i) => i.uid === armedUid);
         if (!item) return;
-        set({ armedUid, armedRot: 0, movingUid: null, selectedUid: null, tool: "edit", toast: null });
+        set({ armedUid, armedRot: 0, movingUid: null, selectedUid: null, tool: "edit", toast: "Toque no piso ou no topo de uma mesa para colocar" });
       },
       cancelArm: () => set({ armedUid: null }),
       rotatePreview: () => {
@@ -292,14 +294,18 @@ export const useGame = create<GameState>()(
         const def = item ? getDef(item.defId) : null;
         if (!item || !def) return false;
         const rot = normRot(item.rot + 1);
-        if (!canPlace(s.room, def, item.x, item.y, rot, item.uid)) {
+        const carriesStack = hasStackedChildren(s.room.items, item.uid);
+        const raisedZ = carriesStack ? stackTopHeight(s.room.items, item.uid) : item.z ?? 0;
+        const supportUid = carriesStack ? undefined : item.supportUid;
+        if (!canPlace(s.room, def, item.x, item.y, rot, item.uid, [], supportUid, raisedZ)) {
           set({ toast: "Sem espaço para girar" });
           return false;
         }
+        const remaining = carriesStack ? detachStackChildren(s.room.items, item.uid) : s.room.items;
         set({
           room: {
             ...s.room,
-            items: s.room.items.map((it) => (it.uid === item.uid ? { ...it, rot } : it)),
+            items: remaining.map((it) => (it.uid === item.uid ? { ...it, rot, z: raisedZ, supportUid } : it)),
           },
           toast: null,
         });
@@ -312,26 +318,27 @@ export const useGame = create<GameState>()(
         set({ movingUid: uid, movingRot: item.rot, selectedUid: uid, tool: "edit", armedUid: null });
       },
       cancelMove: () => set({ movingUid: null }),
-      placeArmed: (x, y, occupied) => {
+      placeArmed: (x, y, occupied, supportUid) => {
         const s = get();
         if (s.homeState) return false;
         const inv = s.inventory.find((i) => i.uid === s.armedUid);
         const def = inv ? getDef(inv.defId) : null;
         if (!inv || !def) return false;
-        if (!canPlace(s.room, def, x, y, s.armedRot, undefined, occupied)) {
+        if (!canPlace(s.room, def, x, y, s.armedRot, undefined, occupied, supportUid)) {
           set({ toast: "Não cabe aqui" });
           return false;
         }
+        const support = supportUid ? s.room.items.find((item) => item.uid === supportUid) : undefined;
         set({
           inventory: s.inventory.filter((i) => i.uid !== inv.uid),
-          room: { ...s.room, items: [...s.room.items, { uid: inv.uid, defId: inv.defId, x, y, rot: s.armedRot }] },
+          room: { ...s.room, items: [...s.room.items, { uid: inv.uid, defId: inv.defId, x, y, rot: s.armedRot, z: support ? stackSurfaceHeight(support) : 0, ...(support ? { supportUid: support.uid } : {}) }] },
           armedUid: null,
           selectedUid: inv.uid,
           toast: `${def.name} no quarto`,
         });
         return true;
       },
-      moveSelected: (x, y, occupied) => {
+      moveSelected: (x, y, occupied, supportUid) => {
         const s = get();
         if (s.homeState) return false;
         const item = s.room.items.find((i) => i.uid === s.movingUid);
@@ -342,14 +349,17 @@ export const useGame = create<GameState>()(
           set({ movingUid: null, toast: null });
           return true;
         }
-        if (!canPlace(s.room, def, x, y, rot, item.uid, occupied)) {
+        const support = supportUid ? s.room.items.find((candidate) => candidate.uid === supportUid) : undefined;
+        const z = support ? stackSurfaceHeight(support) : item.z ?? 0;
+        if (!canPlace(s.room, def, x, y, rot, item.uid, occupied, supportUid, z)) {
           set({ toast: "Não cabe aqui" });
           return false;
         }
+        const remaining = hasStackedChildren(s.room.items, item.uid) ? detachStackChildren(s.room.items, item.uid) : s.room.items;
         set({
           room: {
             ...s.room,
-            items: s.room.items.map((it) => (it.uid === item.uid ? { ...it, x, y, rot } : it)),
+            items: remaining.map((it) => (it.uid === item.uid ? { ...it, x, y, rot, z, supportUid: support?.uid } : it)),
           },
           movingUid: null,
           selectedUid: item.uid,
@@ -363,8 +373,9 @@ export const useGame = create<GameState>()(
         const item = s.room.items.find((i) => i.uid === id);
         const def = item ? getDef(item.defId) : null;
         if (!item || !def) return false;
+        const remaining = detachStackChildren(s.room.items, id);
         set({
-          room: { ...s.room, items: s.room.items.filter((i) => i.uid !== id) },
+          room: { ...s.room, items: remaining.filter((i) => i.uid !== id) },
           inventory: [...s.inventory, { uid: item.uid, defId: item.defId }],
           selectedUid: null,
           movingUid: null,
@@ -405,6 +416,11 @@ export const useGame = create<GameState>()(
       setWall: (wallId) => set({ room: { ...get().room, wallId } }),
       setPattern: (pattern) => set({ room: { ...get().room, pattern } }),
       setRoomName: (name) => set({ room: { ...get().room, name: name.trim().slice(0, 24) || "Meu canto" } }),
+      setDiagonalMovement: (enabled) => {
+        const s = get();
+        if (s.homeState) return;
+        set({ room: { ...s.room, diagonalMovement: enabled } });
+      },
       setLayout: (cols, rows) => {
         const s = get();
         const next = relayout(s.room, s.inventory, s.avatar, cols, rows);
@@ -418,7 +434,7 @@ export const useGame = create<GameState>()(
         });
         return next.returned;
       },
-      setAvatarTile: (x, y, dir) => set({ avatar: { x, y, dir } }),
+      setAvatarTile: (x, y, dir, z = 0) => set({ avatar: { x, y, dir, z } }),
       resetAll: () => {
         const s = get();
         const fresh = createInitial();

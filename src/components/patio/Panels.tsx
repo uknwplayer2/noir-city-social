@@ -57,7 +57,7 @@ export function Panel({
         {which === "shop" && <Shop />}
         {which === "adminShop" && <Shop adminOnly />}
         {which === "bag" && <Bag onArm={onArm} />}
-        {which === "room" && <RoomSettings />}
+        {which === "room" && <RoomSettings inOfficial={inOfficial} />}
         {which === "quests" && <QuestList />}
         {which === "public" && <OfficialRooms onVisitRooftop={onVisitRooftop} onReturnHome={onReturnHome} inOfficial={inOfficial} />}
       </div>
@@ -186,7 +186,7 @@ function Bag({ onArm }: { onArm: (uid: string) => void }) {
   );
 }
 
-function RoomSettings() {
+function RoomSettings({ inOfficial }: { inOfficial: boolean }) {
   const room = useGame((s) => s.room);
   const [name, setName] = useState(room.name);
   const [confirm, setConfirm] = useState(false);
@@ -203,6 +203,25 @@ function RoomSettings() {
           className="h-12 rounded-lg bg-bg px-3 text-base text-fg outline-none focus:ring-2 focus:ring-primary"
         />
       </label>
+      <section className="flex items-center gap-4 rounded-xl border border-white/10 bg-bg p-4">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-medium text-fg">Movimentação diagonal</h3>
+          <p className="mt-1 text-xs leading-5 text-muted">
+            {inOfficial ? "Somente o dono pode alterar esta opção." : "Vale apenas para este quarto. Somente o dono pode alterar."}
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-label="Movimentação diagonal neste quarto"
+          aria-checked={room.diagonalMovement === true}
+          disabled={inOfficial}
+          onClick={() => useGame.getState().setDiagonalMovement(room.diagonalMovement !== true)}
+          className={`relative h-8 w-14 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${room.diagonalMovement ? "bg-primary" : "bg-white/20"}`}
+        >
+          <span className={`absolute top-1 size-6 rounded-full bg-white shadow transition-transform ${room.diagonalMovement ? "translate-x-7" : "translate-x-1"}`} />
+        </button>
+      </section>
       <Field label="Tamanho">
         <div className="grid grid-cols-3 gap-2">
           {LAYOUTS.map((layout) => {

@@ -51,15 +51,71 @@ export function isBlocked(items: Placed[], x: number, y: number, ignoreUid?: str
   return false;
 }
 
+const AVATAR_HEIGHT = 54;
+
+export function isBlockedAtHeight(items: Placed[], x: number, y: number, z: number, ignoreUid?: string): boolean {
+  for (const item of items) {
+    if (item.uid === ignoreUid) continue;
+    const def = getDef(item.defId);
+    if (!def?.blocks || def.isWalkable || !tilesOf(def, item.x, item.y, item.rot).some((tile) => tile.x === x && tile.y === y)) continue;
+    const bottom = item.z ?? 0;
+    const top = bottom + def.height;
+    if (z < top - 0.5 && z + AVATAR_HEIGHT > bottom + 0.5) return true;
+  }
+  return false;
+}
+
+export function walkSurfaceLevels(room: Room, x: number, y: number): number[] {
+  const levels = new Set<number>();
+  if (!isBlockedAtHeight(room.items, x, y, 0)) levels.add(0);
+  for (const item of room.items) {
+    const def = getDef(item.defId);
+    if (!def || (!def.isWalkable && !def.canStack)) continue;
+    if (!tilesOf(def, item.x, item.y, item.rot).some((tile) => tile.x === x && tile.y === y)) continue;
+    const z = (item.z ?? 0) + (def.layer === "floor" ? def.height : def.stackHeight ?? def.height);
+    if (!isBlockedAtHeight(room.items, x, y, z, item.uid)) levels.add(z);
+  }
+  return [...levels].sort((a, b) => a - b);
+}
+
+export function walkSurfaceAt(room: Room, x: number, y: number): number {
+  const levels = walkSurfaceLevels(room, x, y);
+  return levels[levels.length - 1] ?? 0;
+}
+
 export function tileStackHeight(items: Placed[], x: number, y: number, ignoreUid?: string): number {
   let max = 0;
   for (const item of items) {
     if (item.uid === ignoreUid) continue;
     const def = getDef(item.defId);
     if (!def || !tilesOf(def, item.x, item.y, item.rot).some((tile) => tile.x === x && tile.y === y)) continue;
-    max = Math.max(max, def.stackHeight ?? def.height * 0.35);
+    max = Math.max(max, (item.z ?? 0) + (def.stackHeight ?? def.height));
   }
   return max;
+}
+
+export function stackSurfaceHeight(item: Placed): number {
+  const def = getDef(item.defId);
+  return (item.z ?? 0) + (def?.stackHeight ?? def?.height ?? 0);
+}
+
+function overlaps(a: Tile[], b: Tile[]): boolean {
+  return a.some((tile) => b.some((other) => tile.x === other.x && tile.y === other.y));
+}
+
+function isDescendant(items: Placed[], candidateUid: string, ancestorUid: string): boolean {
+  let current = items.find((item) => item.uid === candidateUid);
+  const seen = new Set<string>();
+  while (current?.supportUid && !seen.has(current.uid)) {
+    if (current.supportUid === ancestorUid) return true;
+    seen.add(current.uid);
+    current = items.find((item) => item.uid === current!.supportUid);
+  }
+  return false;
+}
+
+export function hasStackedChildren(items: Placed[], uid: string): boolean {
+  return items.some((item) => item.supportUid === uid || isDescendant(items, item.uid, uid));
 }
 
 export function findSeatAt(room: Room, x: number, y: number): Placed | null {
@@ -86,20 +142,91 @@ export function canPlace(
   rot: Rot,
   ignoreUid?: string,
   occupied: Tile[] = [],
+  supportUid?: string,
+  baseZOverride?: number,
 ): boolean {
   const tiles = tilesOf(def, x, y, rot);
   if (!tiles.length) return false;
+  const support = supportUid ? room.items.find((item) => item.uid === supportUid) : undefined;
+  const supportDef = support ? getDef(support.defId) : undefined;
+  if (supportUid && (!support || !(supportDef?.canStack || supportDef?.isWalkable) || support.uid === ignoreUid || isDescendant(room.items, support.uid, ignoreUid ?? ""))) return false;
+  const baseZ = support ? stackSurfaceHeight(support) : Math.max(0, baseZOverride ?? 0);
+  if (support && !tiles.every((tile) => tilesOf(supportDef!, support.x, support.y, support.rot).some((surface) => surface.x === tile.x && surface.y === tile.y))) return false;
   for (const t of tiles) {
     if (!inRoom(room, t)) return false;
-    if (def.blocks && occupied.some((o) => o.x === t.x && o.y === t.y)) return false;
-    for (const other of room.items) {
-      if (other.uid === ignoreUid) continue;
-      const od = getDef(other.defId);
-      if (!od || od.layer !== def.layer) continue;
-      if (tilesOf(od, other.x, other.y, other.rot).some((p) => p.x === t.x && p.y === t.y)) return false;
-    }
+    if (def.blocks && baseZ <= 0 && occupied.some((o) => o.x === t.x && o.y === t.y)) return false;
+  }
+  for (const other of room.items) {
+    if (other.uid === ignoreUid) continue;
+    const otherDef = getDef(other.defId);
+    if (!otherDef || otherDef.layer !== def.layer) continue;
+    if (!overlaps(tiles, tilesOf(otherDef, other.x, other.y, other.rot))) continue;
+    const otherBottom = other.z ?? 0;
+    const otherTop = otherBottom + otherDef.height;
+    const itemTop = baseZ + def.height;
+    if (baseZ < otherTop - 0.5 && itemTop > otherBottom + 0.5) return false;
   }
   return true;
+}
+
+export function stackTopHeight(items: Placed[], uid: string): number {
+  return items.reduce((height, item) => {
+    return item.uid === uid || isDescendant(items, item.uid, uid) ? Math.max(height, stackSurfaceHeight(item)) : height;
+  }, 0);
+}
+
+export function detachStackChildren(items: Placed[], uid: string): Placed[] {
+  return items.map((item) => item.supportUid === uid ? { ...item, supportUid: undefined } : item);
+}
+
+export function findWalkPath(room: Room, start: Tile, goal: Tile, goalZ: number, allowDiagonal = room.diagonalMovement === true): Tile[] | null {
+  if (!inRoom(room, start) || !inRoom(room, goal) || isBlockedAtHeight(room.items, start.x, start.y, start.z ?? 0)) return null;
+  const nodeKey = (node: Tile) => `${node.x},${node.y},${Math.round((node.z ?? 0) * 10)}`;
+  const startNode = { x: start.x, y: start.y, z: start.z ?? walkSurfaceAt(room, start.x, start.y) };
+  const open: Tile[] = [startNode];
+  const previous = new Map<string, string>();
+  const distance = new Map<string, number>([[nodeKey(startNode), 0]]);
+  const nodes = new Map<string, Tile>([[nodeKey(startNode), startNode]]);
+  const visited = new Set<string>();
+  while (open.length) {
+    open.sort((a, b) => (distance.get(nodeKey(a)) ?? Infinity) - (distance.get(nodeKey(b)) ?? Infinity));
+    const current = open.shift();
+    if (!current) break;
+    const currentKey = nodeKey(current);
+    if (visited.has(currentKey)) continue;
+    if (current.x === goal.x && current.y === goal.y && Math.abs((current.z ?? 0) - goalZ) < 0.5) {
+      const path: Tile[] = [];
+      let key = currentKey;
+      while (previous.has(key)) {
+        path.push(nodes.get(key)!);
+        key = previous.get(key)!;
+      }
+      path.reverse();
+      return path;
+    }
+    visited.add(currentKey);
+    const adjacent = [current, ...neighbors(current).filter((tile) => allowDiagonal || tile.x === current.x || tile.y === current.y)];
+    for (const tile of adjacent) {
+      if (!inRoom(room, tile)) continue;
+      const surfaces = walkSurfaceLevels(room, tile.x, tile.y);
+      if (tile.x === startNode.x && tile.y === startNode.y && !surfaces.some((z) => Math.abs(z - (startNode.z ?? 0)) < 0.5)) surfaces.push(startNode.z ?? 0);
+      if (tile.x === goal.x && tile.y === goal.y && !surfaces.some((z) => Math.abs(z - goalZ) < 0.5)) surfaces.push(goalZ);
+      for (const z of surfaces) {
+        if (isBlockedAtHeight(room.items, tile.x, tile.y, z)) continue;
+        const next = { x: tile.x, y: tile.y, z };
+        const nextKey = nodeKey(next);
+        if (visited.has(nextKey)) continue;
+        const stepCost = (tile.x === current.x && tile.y === current.y ? 0.8 : Math.hypot(tile.x - current.x, tile.y - current.y)) + Math.abs(z - (current.z ?? 0)) / 120;
+        const nextDistance = (distance.get(currentKey) ?? 0) + stepCost;
+        if (nextDistance >= (distance.get(nextKey) ?? Infinity)) continue;
+        previous.set(nextKey, currentKey);
+        distance.set(nextKey, nextDistance);
+        nodes.set(nextKey, next);
+        if (!open.some((node) => nodeKey(node) === nextKey)) open.push(next);
+      }
+    }
+  }
+  return null;
 }
 
 export function neighbors(t: Tile): Tile[] {
@@ -115,7 +242,7 @@ export function neighbors(t: Tile): Tile[] {
   ];
 }
 
-export function findPath(room: Room, start: Tile, goal: Tile): Tile[] | null {
+export function findPath(room: Room, start: Tile, goal: Tile, allowDiagonal = room.diagonalMovement === true): Tile[] | null {
   if (start.x === goal.x && start.y === goal.y) return [];
   if (!inRoom(room, goal) || isBlocked(room.items, goal.x, goal.y)) return null;
   if (!inRoom(room, start)) return null;
@@ -152,6 +279,7 @@ export function findPath(room: Room, start: Tile, goal: Tile): Tile[] | null {
       const dx = n.x - cur.x;
       const dy = n.y - cur.y;
       const diagonal = dx !== 0 && dy !== 0;
+      if (diagonal && !allowDiagonal) continue;
       if (!inRoom(room, n) || isBlocked(room.items, n.x, n.y)) continue;
       if (diagonal && (isBlocked(room.items, cur.x + dx, cur.y) || isBlocked(room.items, cur.x, cur.y + dy))) continue;
       const nk = key(n);
@@ -209,15 +337,18 @@ export function relayout(
     const def = getDef(it.defId);
     if (!def) continue;
     const probe: Room = { ...next, items: kept };
-    if (canPlace(probe, def, it.x, it.y, it.rot)) kept.push(it);
+    if (canPlace(probe, def, it.x, it.y, it.rot, undefined, [], it.supportUid, it.z)) kept.push(it);
     else returned.push({ uid: it.uid, defId: it.defId });
   }
   next.items = kept;
   const stand = findStand(next, avatar);
+  const avatarZ = stand.x === avatar.x && stand.y === avatar.y && walkSurfaceLevels(next, stand.x, stand.y).some((z) => Math.abs(z - (avatar.z ?? 0)) < 0.5)
+    ? avatar.z ?? 0
+    : 0;
   return {
     room: next,
     inventory: [...inv, ...returned],
-    avatar: { ...avatar, x: stand.x, y: stand.y },
+    avatar: { ...avatar, x: stand.x, y: stand.y, z: avatarZ },
     returned: returned.length,
   };
 }
@@ -241,6 +372,7 @@ export function repairSave(raw: unknown): SaveData | null {
     floorId: getFloor(String(raw.room.floorId ?? "")).id,
     wallId: getWall(String(raw.room.wallId ?? "")).id,
     pattern: pattern === "liso" || pattern === "xadrez" || pattern === "tabua" || pattern === "lajota" ? pattern : "tabua",
+    diagonalMovement: raw.room.diagonalMovement === true,
     items: [],
     occupants: [],
   };
@@ -267,8 +399,13 @@ export function repairSave(raw: unknown): SaveData | null {
       y: Math.round(Number(entry.y) || 0),
       rot: normRot(Number(entry.rot) || 0),
       mirror: entry.mirror === true,
+      z: typeof entry.z === "number" && Number.isFinite(entry.z) ? Math.max(0, entry.z) : 0,
+      ...(typeof entry.supportUid === "string" ? { supportUid: entry.supportUid } : {}),
     };
-    if (canPlace(room, def, placed.x, placed.y, placed.rot)) {
+    const support = placed.supportUid ? room.items.find((item) => item.uid === placed.supportUid) : undefined;
+    if (placed.supportUid && !support) placed.supportUid = undefined;
+    if (support) placed.z = stackSurfaceHeight(support);
+    if (canPlace(room, def, placed.x, placed.y, placed.rot, undefined, [], placed.supportUid, placed.z)) {
       seen.add(uid);
       room.items.push(placed);
     } else {
@@ -315,7 +452,9 @@ export function repairSave(raw: unknown): SaveData | null {
     x: clampInt(avatarIn.x, 0, cols - 1, 1),
     y: clampInt(avatarIn.y, 0, rows - 1, rows - 2),
   };
-  const stand = findStand(room, prefer);
+  const savedZ = typeof avatarIn.z === "number" && Number.isFinite(avatarIn.z) ? Math.max(0, Math.min(1000, avatarIn.z)) : 0;
+  const savedSurfaceExists = walkSurfaceLevels(room, prefer.x, prefer.y).some((z) => Math.abs(z - savedZ) < 0.5);
+  const stand = savedSurfaceExists ? prefer : findStand(room, prefer);
   const homeCandidate = isRecord(raw.homeState) ? raw.homeState : null;
   const repairedHome = homeCandidate && isRecord(homeCandidate.room) && isRecord(homeCandidate.avatar)
     ? repairSave({ ...raw, room: homeCandidate.room, avatar: homeCandidate.avatar, homeState: undefined })
@@ -341,7 +480,7 @@ export function repairSave(raw: unknown): SaveData | null {
     coins: Math.max(0, Math.min(999999, Math.round(Number(raw.coins) || 0))),
     inventory: inv,
     room,
-    avatar: { x: stand.x, y: stand.y, dir: normRot(Number(avatarIn.dir) || 0) },
+    avatar: { x: stand.x, y: stand.y, dir: normRot(Number(avatarIn.dir) || 0), z: savedSurfaceExists ? savedZ : 0 },
     ...(repairedHome ? { homeState: { room: repairedHome.room, avatar: repairedHome.avatar } } : {}),
     internalMail,
   };
