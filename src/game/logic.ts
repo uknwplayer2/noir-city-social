@@ -1,7 +1,7 @@
 import { getDef, getFloor, getLook, getWall } from "@/game/catalog";
 import { resolveFigure } from "@/game/avatar/catalog";
 import { figureFromLookId, type AvatarFigure } from "@/game/avatar/layers";
-import { getBubbleSize, getBubbleStyle } from "@/game/bubbles";
+import { getBubbleSize, getBubbleSpeed, getBubbleStyle } from "@/game/bubbles";
 import type { Avatar, FurniDef, InvItem, Placed, Room, Rot, SaveData, Tile } from "@/game/types";
 import { SAVE_VERSION } from "@/game/types";
 
@@ -337,12 +337,12 @@ export function repairSave(raw: unknown): SaveData | null {
     figure: resolveFigure((isRecord(raw.figure) ? raw.figure : figureFromLookId(String(raw.lookId ?? "barro"))) as Partial<AvatarFigure>),
     bubbleStyle: getBubbleStyle(typeof raw.bubbleStyle === "string" ? raw.bubbleStyle : "noir").id,
     bubbleSize: getBubbleSize(raw.bubbleSize),
+    bubbleSpeed: getBubbleSpeed(raw.bubbleSpeed).id,
     coins: Math.max(0, Math.min(999999, Math.round(Number(raw.coins) || 0))),
     inventory: inv,
     room,
     avatar: { x: stand.x, y: stand.y, dir: normRot(Number(avatarIn.dir) || 0) },
     ...(repairedHome ? { homeState: { room: repairedHome.room, avatar: repairedHome.avatar } } : {}),
-    chatDuration: raw.chatDuration === 15000 || raw.chatDuration === 0 ? raw.chatDuration : 20000,
     internalMail,
   };
 }

@@ -3,7 +3,7 @@ import { createJSONStorage, persist, type StateStorage } from "zustand/middlewar
 import { getDef, getLook, sellPrice } from "@/game/catalog";
 import { getLayer } from "@/game/avatar/catalog";
 import { DEFAULT_FIGURE, figureFromLookId, type AvatarFigure, type LayerSlot } from "@/game/avatar/layers";
-import { getBubbleStyle, getBubbleSize, type BubbleSizeId, type BubbleStyleId } from "@/game/bubbles";
+import { getBubbleStyle, getBubbleSize, getBubbleSpeed, type BubbleSizeId, type BubbleSpeedId, type BubbleStyleId } from "@/game/bubbles";
 import { createRooftopNightRoom } from "@/game/roomLayouts";
 import { createNexoOccupant } from "@/game/nexo";
 import { canPlace, normRot, relayout, repairSave } from "@/game/logic";
@@ -27,8 +27,10 @@ export type GameState = SaveData & {
   setLookId: (lookId: string) => void;
   bubbleStyle: BubbleStyleId;
   bubbleSize: BubbleSizeId;
+  bubbleSpeed: BubbleSpeedId;
   setBubbleStyle: (id: BubbleStyleId) => void;
   setBubbleSize: (id: BubbleSizeId) => void;
+  setBubbleSpeed: (id: BubbleSpeedId) => void;
   setRole: (name: string, role: UserRole) => boolean;
   grantCoins: (name: string, amount: number) => boolean;
   awardMiniGameCoins: (amount: number) => void;
@@ -53,7 +55,6 @@ export type GameState = SaveData & {
   setWall: (id: string) => void;
   setPattern: (pattern: Pattern) => void;
   setRoomName: (name: string) => void;
-  setChatDuration: (duration: 15000 | 20000 | 0) => void;
   setLayout: (cols: number, rows: number) => number;
   setAvatarTile: (x: number, y: number, dir: Rot) => void;
   resetAll: () => void;
@@ -78,10 +79,11 @@ function uid(): string {
   return crypto.randomUUID();
 }
 
-export function createInitial(): Omit<SaveData, "figure" | "bubbleStyle" | "bubbleSize"> & {
+export function createInitial(): Omit<SaveData, "figure" | "bubbleStyle" | "bubbleSize" | "bubbleSpeed"> & {
   figure: AvatarFigure;
   bubbleStyle: BubbleStyleId;
   bubbleSize: BubbleSizeId;
+  bubbleSpeed: BubbleSpeedId;
 } {
   const questDay = dayKey();
   const room: Room = {
@@ -128,13 +130,13 @@ export function createInitial(): Omit<SaveData, "figure" | "bubbleStyle" | "bubb
     figure: figureFromLookId("barro"),
     bubbleStyle: "noir",
     bubbleSize: "md",
+    bubbleSpeed: "normal",
     coins: 160,
     inventory,
     room,
     avatar: { x: 4, y: 5, dir: 3 },
     questDay,
     quests: dailyQuests(questDay),
-    chatDuration: 20000,
     internalMail: [],
   };
 }
@@ -223,6 +225,7 @@ export const useGame = create<GameState>()(
       },
       setBubbleStyle: (id) => set({ bubbleStyle: getBubbleStyle(id).id }),
       setBubbleSize: (id) => set({ bubbleSize: getBubbleSize(id) }),
+      setBubbleSpeed: (id) => set({ bubbleSpeed: getBubbleSpeed(id).id }),
       setRole: (name, role) => {
         const s = get();
         if (s.role !== "admin" || name.trim().toLowerCase() !== s.guestName.toLowerCase()) return false;
@@ -402,7 +405,6 @@ export const useGame = create<GameState>()(
       setWall: (wallId) => set({ room: { ...get().room, wallId } }),
       setPattern: (pattern) => set({ room: { ...get().room, pattern } }),
       setRoomName: (name) => set({ room: { ...get().room, name: name.trim().slice(0, 24) || "Meu canto" } }),
-      setChatDuration: (chatDuration) => set({ chatDuration }),
       setLayout: (cols, rows) => {
         const s = get();
         const next = relayout(s.room, s.inventory, s.avatar, cols, rows);
@@ -429,6 +431,7 @@ export const useGame = create<GameState>()(
           figure: s.figure,
           bubbleStyle: s.bubbleStyle,
           bubbleSize: s.bubbleSize,
+          bubbleSpeed: s.bubbleSpeed,
           selectedUid: null,
           tool: "walk",
           armedUid: null,
@@ -457,6 +460,7 @@ export const useGame = create<GameState>()(
         figure: s.figure,
         bubbleStyle: s.bubbleStyle,
         bubbleSize: s.bubbleSize,
+        bubbleSpeed: s.bubbleSpeed,
         coins: s.coins,
         inventory: s.inventory,
         room: s.room,
@@ -464,7 +468,6 @@ export const useGame = create<GameState>()(
         homeState: s.homeState,
         questDay: s.questDay,
         quests: s.quests,
-        chatDuration: s.chatDuration,
         internalMail: s.internalMail,
       }),
       merge: (persisted, current) => {
@@ -479,6 +482,7 @@ export const useGame = create<GameState>()(
           ...fixed,
           bubbleStyle: fixed.bubbleStyle ?? current.bubbleStyle,
           bubbleSize: fixed.bubbleSize ?? current.bubbleSize,
+          bubbleSpeed: fixed.bubbleSpeed ?? current.bubbleSpeed,
           questDay,
           quests,
         };

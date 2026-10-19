@@ -1,5 +1,5 @@
 import type { AvatarFigure } from "@/game/avatar/layers";
-import type { BubbleSizeId, BubbleStyleId } from "@/game/bubbles";
+import type { BubbleSizeId, BubbleSpeedId, BubbleStyleId } from "@/game/bubbles";
 
 export type Rot = 0 | 1 | 2 | 3;
 /** Eight compass directions match the avatar walk sheets. */
@@ -157,6 +157,7 @@ export type SaveData = {
   figure?: AvatarFigure;
   bubbleStyle?: BubbleStyleId;
   bubbleSize?: BubbleSizeId;
+  bubbleSpeed?: BubbleSpeedId;
   coins: number;
   inventory: InvItem[];
   room: Room;
@@ -164,6 +165,5 @@ export type SaveData = {
   homeState?: { room: Room; avatar: Avatar };
   questDay?: string;
   quests?: Quest[];
-  chatDuration?: 15000 | 20000 | 0;
   internalMail: InternalMail[];
 };

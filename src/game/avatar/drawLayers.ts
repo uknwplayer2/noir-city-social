@@ -5,6 +5,7 @@ import { LAYER_ORDER, type AvatarFigure, type LayerSlot } from "@/game/avatar/la
 export type LayerPose = "idle" | "walk" | "sit" | "lay" | "dance";
 
 const imageCache = new Map<string, HTMLImageElement>();
+const FACING_COLUMN = [4, 3, 2, 1, 0, 7, 6, 5] as const;
 
 function layerImage(url: string): HTMLImageElement | null {
   if (typeof Image === "undefined") return null;
@@ -71,10 +72,19 @@ export function drawLayeredAvatar(
     if (def.sprite) {
       const img = layerImage(def.sprite);
       if (img) {
-        const aspect = img.naturalWidth / img.naturalHeight;
+        const columns = Math.max(1, def.frameColumns ?? 1);
+        const facing = opts.facing ?? 4;
+        const column = def.frameColumns ? FACING_COLUMN[facing] : 0;
+        const frame = def.frame ?? {
+          x: column * (img.naturalWidth / columns),
+          y: 0,
+          w: img.naturalWidth / columns,
+          h: img.naturalHeight,
+        };
+        const aspect = frame.w / frame.h;
         const drawH = h;
         const drawW = drawH * aspect;
-        ctx.drawImage(img, -drawW / 2, -h * 0.85, drawW, drawH);
+        ctx.drawImage(img, frame.x, frame.y, frame.w, frame.h, -drawW / 2, -h * 0.85, drawW, drawH);
         continue;
       }
     }

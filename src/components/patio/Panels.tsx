@@ -188,7 +188,6 @@ function Bag({ onArm }: { onArm: (uid: string) => void }) {
 
 function RoomSettings() {
   const room = useGame((s) => s.room);
-  const chatDuration = useGame((s) => s.chatDuration ?? 20000);
   const [name, setName] = useState(room.name);
   const [confirm, setConfirm] = useState(false);
   useEffect(() => setName(room.name), [room.name]);
@@ -223,21 +222,6 @@ function RoomSettings() {
               </button>
             );
           })}
-        </div>
-      </Field>
-      <Field label="Bolhas de conversa">
-        <div className="grid grid-cols-3 gap-2">
-          {([{ label: "15 segundos", value: 15000 }, { label: "20 segundos", value: 20000 }, { label: "Sempre", value: 0 }] as const).map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              aria-pressed={chatDuration === option.value}
-              className={"h-11 rounded-full text-xs font-medium " + (chatDuration === option.value ? "bg-primary text-primary-fg" : "bg-bg text-fg")}
-              onClick={() => useGame.getState().setChatDuration(option.value)}
-            >
-              {option.label}
-            </button>
-          ))}
         </div>
       </Field>
       <Field label="Chão">

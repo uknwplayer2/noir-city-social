@@ -9,6 +9,15 @@ export const BUBBLE_STYLES = [
 
 export type BubbleStyleId = (typeof BUBBLE_STYLES)[number]["id"];
 export type BubbleSizeId = "sm" | "md" | "lg";
+export type BubbleSpeedId = "slow" | "normal" | "fast";
+
+export const BUBBLE_LIFETIME_MS = 40_000;
+
+export const BUBBLE_SPEEDS: { id: BubbleSpeedId; label: string; pixelsPerSecond: number }[] = [
+  { id: "slow", label: "Lenta", pixelsPerSecond: 12 },
+  { id: "normal", label: "Normal", pixelsPerSecond: 20 },
+  { id: "fast", label: "Rápida", pixelsPerSecond: 30 },
+];
 
 export const BUBBLE_SIZES: { id: BubbleSizeId; label: string; preview: string }[] = [
   { id: "lg", label: "Grande", preview: "text-sm px-3 py-1.5" },
@@ -22,4 +31,8 @@ export function getBubbleStyle(id: string | undefined) {
 
 export function getBubbleSize(id: unknown): BubbleSizeId {
   return id === "lg" || id === "sm" ? id : "md";
+}
+
+export function getBubbleSpeed(id: unknown): (typeof BUBBLE_SPEEDS)[number] {
+  return BUBBLE_SPEEDS.find((speed) => speed.id === id) ?? BUBBLE_SPEEDS[1]!;
 }

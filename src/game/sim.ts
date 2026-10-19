@@ -1,4 +1,5 @@
 import { useGame } from "@/game/store";
+import { BUBBLE_LIFETIME_MS } from "@/game/bubbles";
 import { doorTile, findPath, findSeatAt, isBlocked, neighbors, tilesOf } from "@/game/logic";
 import { getDef } from "@/game/catalog";
 import type { Facing, Rot, Tile } from "@/game/types";
@@ -47,6 +48,7 @@ export function resetSim(avatar: { x: number; y: number; dir: Rot }): void {
   sim.x = avatar.x + 0.5;
   sim.y = avatar.y + 0.5;
   sim.dir = avatar.dir;
+  sim.bubbles = [];
   sim.facing = ([2, 4, 6, 0][avatar.dir] ?? 4) as Facing;
   sim.path = [];
   sim.state = "idle";
@@ -175,19 +177,18 @@ export function requestNearestSeat(): boolean {
 }
 
 let bubbleId = 0;
-export function say(text: string, duration = useGame.getState().chatDuration ?? 20000): void {
-  sayAs(useGame.getState().guestName, text, duration);
+export function say(text: string): void {
+  sayAs(useGame.getState().guestName, text);
 }
 
 export function sayAs(
   author: string,
   text: string,
-  duration = useGame.getState().chatDuration ?? 20000,
   position?: { x: number; y: number },
 ): void {
   const clean = text.trim().slice(0, 80);
   if (!clean) return;
-  sim.bubbles.push({ id: ++bubbleId, text: clean, author, x: position?.x ?? sim.x, y: position?.y ?? sim.y, age: 0, duration });
+  sim.bubbles.push({ id: ++bubbleId, text: clean, author, x: position?.x ?? sim.x, y: position?.y ?? sim.y, age: 0, duration: BUBBLE_LIFETIME_MS });
 }
 
 export function requestWalk(goal: Tile): boolean {
@@ -266,7 +267,7 @@ export function tickSim(dt: number): void {
       if (sim.pendingSeatUid) sitOn(sim.pendingSeatUid);
       const door = doorTile(room);
       if (landed.x === door.x && landed.y === door.y) {
-        sim.bubbles.push({ id: ++bubbleId, text: "O corredor do clube ainda está em obra.", author: useGame.getState().guestName, x: sim.x, y: sim.y, age: 0, duration: useGame.getState().chatDuration ?? 20000 });
+        sim.bubbles.push({ id: ++bubbleId, text: "O corredor do clube ainda está em obra.", author: useGame.getState().guestName, x: sim.x, y: sim.y, age: 0, duration: BUBBLE_LIFETIME_MS });
       }
     }
     return;

@@ -3,7 +3,7 @@ import { itemDepth, project, TILE_H, TILE_W, WALL_H, type Cam } from "@/game/iso
 import { dims, doorTile, mapPoint, tilesOf } from "@/game/logic";
 import { drawLayeredAvatar } from "@/game/avatar/drawLayers";
 import { isLegacyLookFigure, type AvatarFigure } from "@/game/avatar/layers";
-import { getBubbleStyle, type BubbleSizeId, type BubbleStyleId } from "@/game/bubbles";
+import { getBubbleSpeed, getBubbleStyle, type BubbleSizeId, type BubbleSpeedId, type BubbleStyleId } from "@/game/bubbles";
 import type { Facing, FurniDef, Look, Occupant, Piece, Placed, Room, Rot } from "@/game/types";
 import classicSprite from "@/game/assets/avatars/classic.png";
 import executiveSprite from "@/game/assets/avatars/executive.png";
@@ -34,6 +34,8 @@ export type ActorDraw = {
   figure?: AvatarFigure;
   bubbleStyle?: BubbleStyleId;
   bubbleSize?: BubbleSizeId;
+  bubbleSpeed?: BubbleSpeedId;
+  bubbleSpeedBoost?: boolean;
   bubbles: { text: string; author: string; x: number; y: number; age: number; duration: number }[];
   handsPocket: boolean;
   state?: "idle" | "walk" | "sit" | "lay" | "dance";
@@ -199,10 +201,11 @@ export function drawScene(
 
   ents.sort((a, b) => a.depth - b.depth || a.layer - b.layer);
   for (const e of ents) e.draw();
+  const bubbleRiseSpeed = getBubbleSpeed(actor.bubbleSpeed).pixelsPerSecond * (actor.bubbleSpeedBoost ? 2 : 1);
   for (const bubble of actor.bubbles as { text: string; author: string; x: number; y: number; age: number; duration: number }[]) {
     const [bx, by] = project(bubble.x, bubble.y, 67, cam);
-    const drift = bubble.duration ? Math.min(bubble.age * 9, 90) : Math.min(bubble.age * 9, 180);
-    drawBubble(ctx, bx, Math.max(24, by - drift), `${bubble.author}: ${bubble.text}`, actor.bubbleStyle, actor.bubbleSize);
+    const drift = bubble.age * bubbleRiseSpeed;
+    drawBubble(ctx, bx, by - drift, `${bubble.author}: ${bubble.text}`, actor.bubbleStyle, actor.bubbleSize);
   }
 
   if (opts.selectedUid) {

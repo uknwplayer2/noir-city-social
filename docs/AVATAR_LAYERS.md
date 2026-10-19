@@ -133,9 +133,11 @@ const [visuaisOpen, setVisuaisOpen] = useState(false);
 
 `body → shoes → pants → shirt → hair → eyes → mouth → hat → accessory`
 
+Para gerar e revisar sprites originais de avatar, roupa e móveis, siga o [fluxo de arte para sprites](SPRITE_ART_WORKFLOW.md). Ele documenta a grade direcional, transparência, âncoras, prompts e integração nos catálogos atuais.
+
 ## Notas
 
-- Sem arte ainda: o manequim procedural colorido já funciona.
+- Layers sem sprite continuam usando o manequim procedural colorido; `body-default` já usa o atlas direcional próprio de Noir City.
 - Olhos e boca são layers independentes.
 - `stackHeight` de móveis continua separado deste sistema.
 - Não é obrigatório subir `SAVE_VERSION` se `figure` for opcional e tiver fallback na leitura do save.

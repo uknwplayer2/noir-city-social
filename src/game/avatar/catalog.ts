@@ -1,5 +1,6 @@
 import type { AvatarFigure, LayerDef, LayerSlot } from "./layers";
 import { DEFAULT_FIGURE } from "./layers";
+import bodyDefaultSprite from "@/game/assets/avatar/layers/body/body-default.png";
 
 /**
  * ============================================================
@@ -28,7 +29,7 @@ import { DEFAULT_FIGURE } from "./layers";
 
 export const LAYER_CATALOG: LayerDef[] = [
   // —— Corpo / manequim ——
-  { id: "body-default", slot: "body", name: "Pele média", color: "#e8b898", selectable: true },
+  { id: "body-default", slot: "body", name: "Base Noir", color: "#e8b898", sprite: bodyDefaultSprite, frameColumns: 8, selectable: true },
   { id: "body-light", slot: "body", name: "Pele clara", color: "#f0c7a4", selectable: true },
   { id: "body-tan", slot: "body", name: "Pele morena", color: "#c98b6a", selectable: true },
   { id: "body-deep", slot: "body", name: "Pele escura", color: "#8d5a3c", selectable: true },

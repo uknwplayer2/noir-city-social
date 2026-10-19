@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { Crosshair, Minus, Plus } from "lucide-react";
+import { ChevronsUp, Crosshair, Minus, Plus } from "lucide-react";
 import { AvatarMenu } from "@/components/patio/AvatarMenu";
 import { ChatBubblePanel } from "@/components/patio/ChatBubblePanel";
 import { VisuaisPanel } from "@/components/patio/VisuaisPanel";
@@ -25,10 +25,13 @@ declare global {
   }
 }
 
-export type RoomViewHandle = { capture: () => string | null; previewStream: () => MediaStream | null; zoom: (factor: number) => void; pan: (x: number, y: number) => void; centerAvatar: () => void };
+export type RoomViewHandle = { capture: () => string | null; previewStream: () => MediaStream | null; zoom: (factor: number) => void; pan: (x: number, y: number) => void; centerAvatar: () => void; frameAvatar: () => void };
 
-const MIN_USER_SCALE = 0.55;
-const MAX_USER_SCALE = 3.2;
+const MIN_USER_SCALE = 0.45;
+/** Zoom alto o suficiente para o avatar preencher boa parte da tela. */
+const MAX_USER_SCALE = 7.5;
+/** Escala usada pelo botão Avatar para enquadrar o personagem. */
+const AVATAR_FRAME_SCALE = 5.2;
 
 function ghostOf(s: GameState): Ghost | null {
   const occupied = avatarTiles();
@@ -70,12 +73,18 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const pinch = useRef<{ dist: number; scale: number } | null>(null);
   const drag = useRef<{ id: number; moved: boolean; long: boolean; hit: Pick; dist: number } | null>(null);
+  const bubbleBoostRef = useRef(false);
   const timer = useRef(0);
-  const avatarHoldTimer = useRef(0);
   const lastAvatarTap = useRef<{ at: number; x: number; y: number } | null>(null);
   const [avatarMenu, setAvatarMenu] = useState<{ open: boolean; x: number; y: number }>({ open: false, x: 0, y: 0 });
   const [visuaisOpen, setVisuaisOpen] = useState(false);
   const [bubblesOpen, setBubblesOpen] = useState(false);
+  const [bubbleBoostActive, setBubbleBoostActive] = useState(false);
+
+  function changeBubbleBoost(active: boolean) {
+    bubbleBoostRef.current = active;
+    setBubbleBoostActive(active);
+  }
 
   useEffect(() => {
     let dead = false;
@@ -98,7 +107,6 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     return () => {
       dead = true;
       window.clearTimeout(timer.current);
-      window.clearTimeout(avatarHoldTimer.current);
       unsub();
       previewStreamRef.current?.getTracks().forEach((track) => track.stop());
       previewStreamRef.current = null;
@@ -184,6 +192,8 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
             figure: s.figure,
             bubbleStyle: s.bubbleStyle,
             bubbleSize: s.bubbleSize,
+            bubbleSpeed: s.bubbleSpeed,
+            bubbleSpeedBoost: bubbleBoostRef.current,
             bubbles: sim.bubbles,
             handsPocket: sim.handsPocket,
             state: sim.state,
@@ -246,6 +256,23 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     view.current.panY += size.current.h / 2 - point.y;
   }
 
+  function frameAvatar() {
+    const room = useGame.getState().room;
+    view.current.userScale = Math.min(MAX_USER_SCALE, Math.max(MIN_USER_SCALE, AVATAR_FRAME_SCALE));
+    const camera = frameCamera(
+      size.current.w,
+      size.current.h,
+      room.cols,
+      room.rows,
+      view.current.userScale,
+      view.current.panX,
+      view.current.panY,
+    );
+    const [avatarX, avatarY] = project(sim.x, sim.y, 26, camera);
+    view.current.panX += size.current.w / 2 - avatarX;
+    view.current.panY += size.current.h * 0.58 - avatarY;
+  }
+
   useImperativeHandle(forwardedRef, () => ({
     capture: () => {
       const canvas = canvasRef.current;
@@ -261,6 +288,7 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     zoom: (factor) => zoomAt(factor, avatarScreenPoint()),
     pan: (x, y) => { view.current.panX += x; view.current.panY += y; },
     centerAvatar,
+    frameAvatar,
   }));
 
   function onPointerDown(e: ReactPointerEvent<HTMLCanvasElement>) {
@@ -272,19 +300,9 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     const hit = pick(p.x, p.y, useGame.getState().room, camRef.current);
     drag.current = { id: e.pointerId, moved: false, long: false, hit, dist: 0 };
     window.clearTimeout(timer.current);
-    window.clearTimeout(avatarHoldTimer.current);
     const s = useGame.getState();
     const [avatarX, avatarY] = project(sim.x, sim.y, 26, camRef.current);
     const onAvatar = Math.hypot(p.x - avatarX, p.y - avatarY) < 18 * camRef.current.scale;
-    if (onAvatar && !s.homeState && !s.armedUid && !s.movingUid) {
-      avatarHoldTimer.current = window.setTimeout(() => {
-        if (drag.current && !drag.current.moved) {
-          drag.current.long = true;
-          setAvatarMenu({ open: true, x: p.x, y: p.y });
-          blip("ok");
-        }
-      }, 3000);
-    }
     if (!onAvatar && hit?.kind === "item" && !s.homeState && !s.armedUid && !s.movingUid) {
       const uid = hit.uid;
       timer.current = window.setTimeout(() => {
@@ -305,7 +323,7 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     if (pts.length >= 2) {
       if (drag.current) drag.current.moved = true;
       window.clearTimeout(timer.current);
-      window.clearTimeout(avatarHoldTimer.current);
+      lastAvatarTap.current = null;
       const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
       const center = { x: (pts[0]!.x + pts[1]!.x) / 2, y: (pts[0]!.y + pts[1]!.y) / 2 };
       if (!pinch.current) pinch.current = { dist, scale: view.current.userScale };
@@ -324,7 +342,7 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     if (d.dist > 10) {
       d.moved = true;
       window.clearTimeout(timer.current);
-      window.clearTimeout(avatarHoldTimer.current);
+      lastAvatarTap.current = null;
       view.current.panX += e.movementX;
       view.current.panY += e.movementY;
     }
@@ -334,7 +352,6 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     pointers.current.delete(e.pointerId);
     if (pointers.current.size < 2) pinch.current = null;
     window.clearTimeout(timer.current);
-    window.clearTimeout(avatarHoldTimer.current);
     const d = drag.current;
     drag.current = null;
     if (!d || d.id !== e.pointerId || d.moved || d.long || !sim.booted) return;
@@ -343,17 +360,23 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     const [avatarX, avatarY] = project(sim.x, sim.y, 26, camRef.current);
     const isAvatarTap = Math.hypot(pos.x - avatarX, pos.y - avatarY) < 16 * camRef.current.scale;
     if (isAvatarTap) {
+      const state = useGame.getState();
+      if (state.homeState || state.armedUid || state.movingUid) {
+        lastAvatarTap.current = null;
+        return;
+      }
       const now = performance.now();
       const previous = lastAvatarTap.current;
-      if (previous && now - previous.at < 420 && Math.hypot(pos.x - previous.x, pos.y - previous.y) < 24) {
-        sim.handsPocket = !sim.handsPocket;
+      if (previous && now - previous.at < 450 && Math.hypot(pos.x - previous.x, pos.y - previous.y) < 24) {
         lastAvatarTap.current = null;
-        useGame.getState().setToast(sim.handsPocket ? "Mãos nos bolsos" : "Postura normal");
+        setAvatarMenu({ open: true, x: pos.x, y: pos.y });
+        blip("ok");
         return;
       }
       lastAvatarTap.current = { at: now, x: pos.x, y: pos.y };
       return;
     }
+    lastAvatarTap.current = null;
     act(d.hit, local(e));
   }
 
@@ -422,7 +445,49 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
       />
       <VisuaisPanel open={visuaisOpen} onClose={() => setVisuaisOpen(false)} />
       <ChatBubblePanel open={bubblesOpen} onClose={() => setBubblesOpen(false)} />
-      <div className="pointer-events-none absolute top-3 right-3 flex flex-col gap-2">
+      <div className="pointer-events-none absolute bottom-3 left-3 z-20">
+        <button
+          type="button"
+          aria-label="Acelerar subida das bolhas em 2x enquanto pressionado"
+          aria-pressed={bubbleBoostActive}
+          className={`pointer-events-auto flex h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold shadow-lg transition active:scale-95 touch-none select-none ${
+            bubbleBoostActive
+              ? "border-[#f0d58d] bg-[#f0d58d] text-[#21170e]"
+              : "border-[#e8c478]/80 bg-[#c4a05a] text-[#21170e]"
+          }`}
+          onPointerDown={(event) => {
+            event.preventDefault();
+            event.currentTarget.setPointerCapture(event.pointerId);
+            changeBubbleBoost(true);
+          }}
+          onPointerUp={() => changeBubbleBoost(false)}
+          onPointerCancel={() => changeBubbleBoost(false)}
+          onLostPointerCapture={() => changeBubbleBoost(false)}
+          onKeyDown={(event) => {
+            if (event.key === " " || event.key === "Enter") {
+              event.preventDefault();
+              changeBubbleBoost(true);
+            }
+          }}
+          onKeyUp={(event) => {
+            if (event.key === " " || event.key === "Enter") changeBubbleBoost(false);
+          }}
+          onBlur={() => changeBubbleBoost(false)}
+        >
+          <ChevronsUp className="size-4" aria-hidden />
+          2× bolhas
+        </button>
+      </div>
+      <div className="pointer-events-none absolute top-3 right-3 z-20 flex flex-col items-end gap-2">
+        <button
+          type="button"
+          onClick={frameAvatar}
+          className="pointer-events-auto flex h-10 items-center gap-1.5 rounded-full border border-[#e8c478]/80 bg-[#c4a05a] px-3.5 text-sm font-semibold text-[#21170e] shadow-[0_4px_16px_rgba(0,0,0,0.35)] transition active:scale-95"
+          aria-label="Enquadrar avatar"
+        >
+          <Crosshair className="size-4" />
+          Avatar
+        </button>
         <button type="button" className="pointer-events-auto grid size-11 place-items-center rounded-full bg-surface text-fg" onClick={centerAvatar} aria-label="Centralizar avatar">
           <Crosshair className="size-5" />
         </button>

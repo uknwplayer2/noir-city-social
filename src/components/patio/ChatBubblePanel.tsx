@@ -1,5 +1,5 @@
 import { useGame } from "@/game/store";
-import { BUBBLE_SIZES, BUBBLE_STYLES, getBubbleStyle } from "@/game/bubbles";
+import { BUBBLE_SIZES, BUBBLE_SPEEDS, BUBBLE_STYLES, getBubbleStyle } from "@/game/bubbles";
 
 type Props = {
   open: boolean;
@@ -10,8 +10,10 @@ export function ChatBubblePanel({ open, onClose }: Props) {
   const name = useGame((s) => s.guestName);
   const styleId = useGame((s) => s.bubbleStyle ?? "noir");
   const sizeId = useGame((s) => s.bubbleSize ?? "md");
+  const speedId = useGame((s) => s.bubbleSpeed ?? "normal");
   const setBubbleStyle = useGame((s) => s.setBubbleStyle);
   const setBubbleSize = useGame((s) => s.setBubbleSize);
+  const setBubbleSpeed = useGame((s) => s.setBubbleSpeed);
 
   if (!open) return null;
 
@@ -112,6 +114,32 @@ export function ChatBubblePanel({ open, onClose }: Props) {
                       {name}: {size.label}
                     </span>
                   </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="border-t border-primary/15 px-4 py-4">
+          <p className="mb-3 text-center text-xs font-medium uppercase tracking-[0.14em] text-muted">
+            Velocidade de subida
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {BUBBLE_SPEEDS.map((speed) => {
+              const selected = speed.id === speedId;
+              return (
+                <button
+                  key={speed.id}
+                  type="button"
+                  onClick={() => setBubbleSpeed(speed.id)}
+                  aria-pressed={selected}
+                  className={`h-10 rounded-full border text-xs font-medium transition ${
+                    selected
+                      ? "border-primary bg-primary/15 text-primary"
+                      : "border-primary/15 bg-black/25 text-fg hover:border-primary/35"
+                  }`}
+                >
+                  {speed.label}
                 </button>
               );
             })}

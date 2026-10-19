@@ -38,6 +38,8 @@ export type LayerDef = {
   color?: string;
   /** Frame na sheet idle */
   frame?: { x: number; y: number; w: number; h: number };
+  /** Número de colunas direcionais na sheet idle (ordem compatível com Facing). */
+  frameColumns?: number;
   /** Aparece no menu Visuais */
   selectable?: boolean;
   locked?: boolean;

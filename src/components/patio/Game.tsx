@@ -62,7 +62,7 @@ export function Game() {
   useEffect(() => {
     if (!entered || roomName === "Rooftop Night" || greeted.current) return;
     greeted.current = true;
-    const id = window.setTimeout(() => sayAs("Nexo", "Oi! Eu sou o Nexo. Que bom começar este quarto com você.", 15000, getNexoActor()), 900);
+    const id = window.setTimeout(() => sayAs("Nexo", "Oi! Eu sou o Nexo. Que bom começar este quarto com você.", getNexoActor()), 900);
     return () => window.clearTimeout(id);
   }, [entered, roomName]);
 
@@ -173,7 +173,7 @@ export function Game() {
       <header className="safe-top flex items-center gap-2 px-2 py-3 sm:gap-3 sm:px-4">
         <span className="size-3 rotate-45 bg-primary" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="font-display text-xl font-semibold leading-none tracking-[0.14em] text-primary">NOIR <span className="text-xs tracking-normal text-muted">v1.50</span></p>
+          <p className="font-display text-xl font-semibold leading-none tracking-[0.14em] text-primary">NOIR <span className="text-xs tracking-normal text-muted">v1.52</span></p>
           <p className="truncate text-[10px] font-medium uppercase tracking-[0.14em] text-muted">Social Hotel · {roomName}</p>
         </div>
         <button type="button" onClick={goToHome} className="grid size-10 shrink-0 place-items-center rounded-full border border-primary/25 bg-surface text-primary sm:size-11" aria-label="Voltar ao menu inicial"><Home className="size-5" /></button>
@@ -258,10 +258,10 @@ export function Game() {
               setChat("");
               return;
             }
-            say(message, useGame.getState().chatDuration ?? 20000);
+            say(message);
             if (message && useGame.getState().room.occupants.some((occupant) => occupant.id === "nexo-roommate")) {
               const response = nexoReply(message, useGame.getState().guestName);
-              window.setTimeout(() => sayAs("Nexo", response, useGame.getState().chatDuration ?? 20000, getNexoActor()), 700);
+              window.setTimeout(() => sayAs("Nexo", response, getNexoActor()), 700);
             }
             setChat("");
             unlockAudio();

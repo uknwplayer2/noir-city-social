@@ -78,7 +78,7 @@ function columnHitHeight(
   height: number,
   cam: Cam,
 ): number | null {
-  const steps = Math.max(1, Math.ceil(height / 8));
+  const steps = Math.max(1, Math.ceil(height / 4));
   let highestHit: number | null = null;
   for (let i = 0; i <= steps; i++) {
     const z = (height * i) / steps;
@@ -102,23 +102,57 @@ export type Pick =
   | { kind: "tile"; x: number; y: number }
   | null;
 
+function layerRank(def: NonNullable<ReturnType<typeof getDef>>): number {
+  if (def.layer === "object") return 3;
+  if (def.layer === "floor") return 0;
+  return 1;
+}
+
+function isFloorish(def: NonNullable<ReturnType<typeof getDef>>): boolean {
+  return def.layer === "floor" || def.isWalkable === true || def.height <= 6;
+}
+
 export function pick(px: number, py: number, room: Room, cam: Cam): Pick {
-  let best: { uid: string; hitHeight: number; depth: number } | null = null;
-  const items = [...room.items].sort((a, b) => itemDepth(b) - itemDepth(a) || b.y - a.y);
-  for (const it of items) {
+  type Candidate = {
+    uid: string;
+    hitHeight: number;
+    depth: number;
+    rank: number;
+    itemHeight: number;
+  };
+
+  let best: Candidate | null = null;
+
+  for (const it of room.items) {
     const def = getDef(it.defId);
     if (!def) continue;
+
     const tiles = tilesOf(def, it.x, it.y, it.rot);
+    const floorish = isFloorish(def);
+    const testHeight = floorish
+      ? Math.max(def.height, 4)
+      : def.height + Math.max(8, def.height * 0.15);
     let hitHeight: number | null = null;
     for (const tile of tiles) {
-      const z = columnHitHeight(px, py, tile.x, tile.y, def.height + 12, cam);
+      const z = columnHitHeight(px, py, tile.x, tile.y, testHeight, cam);
       if (z !== null && (hitHeight === null || z > hitHeight)) hitHeight = z;
     }
     if (hitHeight === null) continue;
+
+    if (floorish && hitHeight > Math.max(6, def.height + 2)) continue;
+
+    const rank = layerRank(def);
     const depth = itemDepth(it);
-    if (!best || hitHeight > best.hitHeight || (hitHeight === best.hitHeight && depth > best.depth)) {
-      best = { uid: it.uid, hitHeight, depth };
-    }
+    const itemHeight = def.height;
+    const sameTouchHeight = best !== null && Math.abs(hitHeight - best.hitHeight) <= 0.5;
+    const better =
+      !best ||
+      rank > best.rank ||
+      (rank === best.rank && hitHeight > best.hitHeight + 0.5) ||
+      (rank === best.rank && sameTouchHeight && itemHeight > best.itemHeight) ||
+      (rank === best.rank && sameTouchHeight && itemHeight === best.itemHeight && depth > best.depth);
+
+    if (better) best = { uid: it.uid, hitHeight, depth, rank, itemHeight };
   }
   if (best) return { kind: "item", uid: best.uid };
   const t = tileAt(px, py, cam);

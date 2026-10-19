@@ -96,14 +96,25 @@ export function VisuaisPanel({ open, onClose }: Props) {
                     }`}
                   >
                     <div
-                      className="flex size-14 items-center justify-center rounded-lg border border-primary/20"
+                      className="relative flex size-14 items-center justify-center overflow-hidden rounded-lg border border-primary/20"
                       style={{
                         background:
                           layer.color && layer.color !== "transparent"
                             ? layer.color
                             : "repeating-conic-gradient(#333 0% 25%, #222 0% 50%) 50% / 12px 12px",
                       }}
-                    />
+                    >
+                      {layer.sprite && (
+                        <div className="h-full w-[22px] overflow-hidden">
+                          <img
+                            src={layer.sprite}
+                            alt=""
+                            className="h-full max-w-none"
+                            style={{ width: `${(layer.frameColumns ?? 1) * 100}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
                     <span className={`text-center text-sm font-medium ${selected ? "text-primary" : "text-fg"}`}>
                       {layer.name}
                     </span>

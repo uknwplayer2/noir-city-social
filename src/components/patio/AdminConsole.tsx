@@ -32,7 +32,7 @@ export function AdminConsole({ onClose, onSendAlert }: { onClose: () => void; on
           <label className="mt-4 flex flex-col gap-2 text-sm text-muted">Mensagem personalizada
             <textarea value={creditMessage} onChange={(e) => setCreditMessage(e.target.value)} maxLength={120} className="min-h-20 rounded-xl border border-white/10 bg-[#111118] p-4 text-fg outline-none focus:border-primary" />
           </label>
-          <button type="button" onClick={() => { const ok = useGame.getState().grantCoins(target, Number(amount)); if (ok && creditMessage.trim()) sayAs("Console Godmode", creditMessage.trim(), 15000); }} className="mt-4 h-12 w-full rounded-full bg-primary font-semibold text-primary-fg">Conceder créditos</button>
+          <button type="button" onClick={() => { const ok = useGame.getState().grantCoins(target, Number(amount)); if (ok && creditMessage.trim()) sayAs("Console Godmode", creditMessage.trim()); }} className="mt-4 h-12 w-full rounded-full bg-primary font-semibold text-primary-fg">Conceder créditos</button>
         </section>
         <section className="mt-5 border-t border-white/10 pt-5">
           <h3 className="flex items-center gap-2 font-semibold"><AlertTriangle className="size-5 text-primary" /> Alerta ao vivo</h3>
