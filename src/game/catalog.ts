@@ -282,20 +282,21 @@ export const CATALOG: FurniDef[] = [
   }),
   def({
     id: "cama",
-    name: "Cama",
-    blurb: "Lençol claro",
+    name: "Cama Art Déco Noir",
+    blurb: "Madeira escura, latão e peseira bordô",
     category: "assento",
     price: 90,
     w: 2,
     d: 2,
     layer: "object",
+    procedural: "noir-bed",
     canSit: true,
     canLay: true,
     pieces: [
-      box(0.05, 0.05, 1.9, 1.9, 0, 8, wood),
-      box(0.16, 0.34, 1.68, 1.52, 8, 8, linen),
-      box(0.3, 0.14, 1.4, 0.4, 16, 5, clothLight),
-      box(0.2, 0.9, 1.6, 0.9, 16, 4, cloth),
+      // Metadata de colisão/altura; a geometria visível é desenhada por drawNoirBed.
+      box(0.08, 0.06, 1.84, 1.88, 0, 10, woodDark),
+      box(0.06, 0.02, 1.88, 0.16, 10, 34, woodDark),
+      box(0.12, 0.18, 1.76, 1.66, 10, 9, linen),
     ],
   }),
   def({

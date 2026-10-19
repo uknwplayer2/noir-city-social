@@ -64,6 +64,8 @@ export type FurniDef = {
   canSit?: boolean;
   canLay?: boolean;
   isWalkable?: boolean;
+  /** Desenho especializado por geometria procedural no Canvas 2D. */
+  procedural?: "noir-bed";
   pieces: Piece[];
   sprite?: string;
   spriteFrames?: [SpriteFrame, SpriteFrame, SpriteFrame, SpriteFrame];

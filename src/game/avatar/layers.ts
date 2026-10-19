@@ -40,6 +40,8 @@ export type LayerDef = {
   frame?: { x: number; y: number; w: number; h: number };
   /** Número de colunas direcionais na sheet idle (ordem compatível com Facing). */
   frameColumns?: number;
+  /** Desenho procedural especializado do layer. */
+  procedural?: "smooth-body";
   /** Aparece no menu Visuais */
   selectable?: boolean;
   locked?: boolean;

@@ -517,6 +517,15 @@ export function drawPlaced(
     }
     return;
   }
+  if (def.procedural === "noir-bed") {
+    ctx.save();
+    ctx.translate(center[0], center[1]);
+    ctx.scale(renderScale, renderScale);
+    ctx.translate(-center[0], -center[1]);
+    drawNoirBed(ctx, def, ax, ay, rot, cam, alpha, ok, baseZ);
+    ctx.restore();
+    return;
+  }
   const pieces = [...def.pieces].sort((a, b) => pieceDepth(a, rot, def.w, def.d, ax, ay) - pieceDepth(b, rot, def.w, def.d, ax, ay));
   ctx.save();
   ctx.translate(center[0], center[1]);
@@ -524,6 +533,267 @@ export function drawPlaced(
   ctx.translate(-center[0], -center[1]);
   for (const piece of pieces) drawPiece(ctx, piece, rot, def.w, def.d, ax, ay, cam, alpha, ok, baseZ);
   ctx.restore();
+}
+
+function drawNoirBed(
+  ctx: CanvasRenderingContext2D,
+  def: FurniDef,
+  ax: number,
+  ay: number,
+  rot: Rot,
+  cam: Cam,
+  alpha: number,
+  ok: boolean,
+  baseZ: number,
+): void {
+  const { w, d } = def;
+  const colors = ok
+    ? { woodTop: "#795039", woodSide: "#452b22", woodDark: "#261a18", brass: "#d1a052", brassLight: "#f0cf83", linen: "#eadcc5", linenLight: "#fff0d8", burgundy: "#702332", burgundyShade: "#491923" }
+    : { woodTop: BAD.top, woodSide: BAD.left, woodDark: BAD.right, brass: BAD.right, brassLight: BAD.left, linen: BAD.top, linenLight: BAD.top, burgundy: BAD.right, burgundyShade: BAD.right };
+  const piece = (x: number, y: number, pw: number, pd: number, z: number, h: number, top: string, left = colors.woodSide, right = colors.woodDark) =>
+    drawPiece(ctx, { kind: "box", x, y, w: pw, d: pd, z, h, top, left, right }, rot, def.w, def.d, ax, ay, cam, alpha, ok, baseZ);
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  // Feet and frame: the bed's long axis follows the room's y direction.
+  for (const x of [0.13, 1.72]) for (const y of [0.1, 1.78]) {
+    piece(x, y, 0.16, 0.16, 0, 5, colors.woodTop, colors.woodDark, colors.woodDark);
+    piece(x + 0.015, y + 0.015, 0.13, 0.13, 4, 1.4, colors.brass, colors.brass, colors.brass);
+  }
+  piece(0.08, 0.1, 0.11, 1.82, 5, 7, colors.woodTop);
+  piece(1.81, 0.1, 0.11, 1.82, 5, 7, colors.woodTop);
+  piece(0.12, 1.79, 1.76, 0.12, 5, 7, colors.woodTop);
+
+  // Raised, arched headboard, with a dark inset and a fine brass arch.
+  piece(0.08, 0.04, 0.16, 0.16, 10, 30, colors.woodTop, colors.woodSide, colors.woodDark);
+  piece(1.76, 0.04, 0.16, 0.16, 10, 30, colors.woodTop, colors.woodSide, colors.woodDark);
+  drawBedHeadboard(ctx, ax, ay, rot, w, d, cam, baseZ, colors, alpha);
+
+  // Mattress and softly rounded ivory quilt.
+  piece(0.16, 0.16, 1.68, 1.68, 11, 7, colors.linenLight, colors.linen, "#cbb99d");
+  drawBedSurface(ctx, ax, ay, rot, w, d, cam, baseZ + 19, 0.2, 0.17, 1.8, 1.79, colors.linenLight, colors.linen, 0.07, alpha);
+  drawBedQuiltStitching(ctx, ax, ay, rot, w, d, cam, baseZ + 19.2, alpha);
+
+  // Two pillows and a smaller accent cushion near the headboard.
+  drawBedPillow(ctx, ax, ay, rot, w, d, cam, baseZ + 20, 0.28, 0.27, 0.88, 0.72, alpha, colors);
+  drawBedPillow(ctx, ax, ay, rot, w, d, cam, baseZ + 20, 1.1, 0.27, 1.7, 0.72, alpha, colors);
+  drawBedSurface(ctx, ax, ay, rot, w, d, cam, baseZ + 21, 0.78, 0.64, 1.24, 0.93, "#ddc9aa", "#9f7956", 0.04, alpha);
+
+  // A folded wine-colored runner at the foot, edged with a restrained brass line.
+  drawBedSurface(ctx, ax, ay, rot, w, d, cam, baseZ + 20, 0.2, 1.45, 1.8, 1.78, colors.burgundy, colors.burgundyShade, 0.035, alpha);
+  drawBedLine(ctx, ax, ay, rot, w, d, cam, baseZ + 20.2, [
+    [0.23, 1.48], [1.77, 1.48],
+  ], colors.brassLight, Math.max(1, cam.scale * 0.9), alpha);
+  drawBedLine(ctx, ax, ay, rot, w, d, cam, baseZ + 20.2, [
+    [0.23, 1.74], [1.77, 1.74],
+  ], colors.brass, Math.max(1, cam.scale * 0.8), alpha);
+  drawBedLine(ctx, ax, ay, rot, w, d, cam, baseZ + 20.2, [
+    [0.33, 1.55], [0.33, 1.68],
+    [1, 1.55], [1, 1.68],
+    [1.67, 1.55], [1.67, 1.68],
+  ], "rgba(255, 225, 194, 0.18)", Math.max(1, cam.scale * 0.75), alpha);
+
+  // Fine metal rail on the visible footboard.
+  drawBedLine(ctx, ax, ay, rot, w, d, cam, baseZ + 12.4, [
+    [0.2, 1.9], [1.8, 1.9],
+  ], colors.brass, Math.max(1, cam.scale * 1.15), alpha);
+  ctx.restore();
+}
+
+function bedPoint(
+  ax: number, ay: number, u: number, v: number, z: number,
+  rot: Rot, w: number, d: number, cam: Cam, baseZ: number,
+): [number, number] {
+  const [x, y] = mapPoint(u, v, rot, w, d);
+  return project(ax + x, ay + y, baseZ + z, cam);
+}
+
+function drawBedHeadboard(
+  ctx: CanvasRenderingContext2D,
+  ax: number,
+  ay: number,
+  rot: Rot,
+  w: number,
+  d: number,
+  cam: Cam,
+  baseZ: number,
+  colors: Record<string, string>,
+  alpha: number,
+): void {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  const panelY = 0.17;
+  const xs = Array.from({ length: 17 }, (_, i) => 0.08 + (1.84 * i) / 16);
+  const archZ = (x: number) => 32 + 5.5 * Math.sqrt(Math.max(0, 1 - ((x - 1) / 0.94) ** 2));
+  const outline = xs.map((x) => bedPoint(ax, ay, x, panelY, archZ(x), rot, w, d, cam, baseZ));
+  const baseRight = bedPoint(ax, ay, 1.92, panelY, 11, rot, w, d, cam, baseZ);
+  const baseLeft = bedPoint(ax, ay, 0.08, panelY, 11, rot, w, d, cam, baseZ);
+  const gradient = ctx.createLinearGradient(outline[0][0], outline[0][1], outline.at(-1)![0], outline.at(-1)![1]);
+  gradient.addColorStop(0, colors.woodSide);
+  gradient.addColorStop(0.48, colors.woodTop);
+  gradient.addColorStop(1, colors.woodDark);
+  ctx.beginPath();
+  ctx.moveTo(baseLeft[0], baseLeft[1]);
+  outline.forEach((p) => ctx.lineTo(p[0], p[1]));
+  ctx.lineTo(baseRight[0], baseRight[1]);
+  ctx.closePath();
+  ctx.fillStyle = gradient;
+  ctx.fill();
+  ctx.strokeStyle = "rgba(22, 14, 13, 0.86)";
+  ctx.lineWidth = Math.max(1.2, cam.scale * 1.05);
+  ctx.stroke();
+
+  const inner = xs.slice(1, -1).map((x) => bedPoint(ax, ay, x, panelY + 0.012, archZ(x) - 3.8, rot, w, d, cam, baseZ));
+  ctx.beginPath();
+  inner.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+  ctx.strokeStyle = colors.brass;
+  ctx.lineWidth = Math.max(1.2, cam.scale * 1.25);
+  ctx.stroke();
+  const insetBaseLeft = bedPoint(ax, ay, 0.24, panelY + 0.014, 14.5, rot, w, d, cam, baseZ);
+  const insetBaseRight = bedPoint(ax, ay, 1.76, panelY + 0.014, 14.5, rot, w, d, cam, baseZ);
+  ctx.beginPath();
+  ctx.moveTo(insetBaseLeft[0], insetBaseLeft[1]);
+  inner.forEach((p) => ctx.lineTo(p[0], p[1]));
+  ctx.lineTo(insetBaseRight[0], insetBaseRight[1]);
+  ctx.strokeStyle = "rgba(16, 12, 12, 0.62)";
+  ctx.lineWidth = Math.max(1, cam.scale * 0.7);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawBedSurface(
+  ctx: CanvasRenderingContext2D,
+  ax: number,
+  ay: number,
+  rot: Rot,
+  w: number,
+  d: number,
+  cam: Cam,
+  z: number,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  light: string,
+  shade: string,
+  radius: number,
+  alpha: number,
+): void {
+  const points = [
+    bedPoint(ax, ay, x0, y0, z, rot, w, d, cam, 0),
+    bedPoint(ax, ay, x1, y0, z, rot, w, d, cam, 0),
+    bedPoint(ax, ay, x1, y1, z, rot, w, d, cam, 0),
+    bedPoint(ax, ay, x0, y1, z, rot, w, d, cam, 0),
+  ];
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.beginPath();
+  traceRoundedPolygon(ctx, points, Math.max(1, cam.scale * TILE_W * radius));
+  const g = ctx.createLinearGradient(points[0][0], points[0][1], points[2][0], points[2][1]);
+  g.addColorStop(0, light);
+  g.addColorStop(1, shade);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.strokeStyle = "rgba(35, 24, 22, 0.56)";
+  ctx.lineWidth = Math.max(1, cam.scale * 0.8);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawBedPillow(
+  ctx: CanvasRenderingContext2D,
+  ax: number,
+  ay: number,
+  rot: Rot,
+  w: number,
+  d: number,
+  cam: Cam,
+  z: number,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  alpha: number,
+  colors: Record<string, string>,
+): void {
+  drawBedSurface(ctx, ax, ay, rot, w, d, cam, z, x0, y0, x1, y1, colors.linenLight, colors.linen, 0.13, alpha);
+  drawBedLine(ctx, ax, ay, rot, w, d, cam, z + 0.1, [
+    [x0 + 0.08, y0 + 0.08], [x1 - 0.08, y0 + 0.08],
+    [x1 - 0.08, y1 - 0.08], [x0 + 0.08, y1 - 0.08],
+  ], "rgba(139, 104, 68, 0.58)", Math.max(1, cam.scale * 0.65), alpha);
+}
+
+function drawBedQuiltStitching(
+  ctx: CanvasRenderingContext2D,
+  ax: number,
+  ay: number,
+  rot: Rot,
+  w: number,
+  d: number,
+  cam: Cam,
+  z: number,
+  alpha: number,
+): void {
+  for (const x of [0.66, 1, 1.34]) {
+    drawBedLine(ctx, ax, ay, rot, w, d, cam, z, [
+      [x - 0.06, 0.91], [x, 1], [x + 0.06, 1.09],
+      [x, 1.18], [x - 0.06, 1.27],
+    ], "rgba(151, 120, 84, 0.24)", Math.max(1, cam.scale * 0.65), alpha);
+  }
+  drawBedLine(ctx, ax, ay, rot, w, d, cam, z, [
+    [0.3, 0.91], [1.7, 0.91],
+  ], "rgba(255, 247, 230, 0.58)", Math.max(1, cam.scale * 0.7), alpha);
+}
+
+function drawBedLine(
+  ctx: CanvasRenderingContext2D,
+  ax: number,
+  ay: number,
+  rot: Rot,
+  w: number,
+  d: number,
+  cam: Cam,
+  z: number,
+  coords: [number, number][],
+  color: string,
+  width: number,
+  alpha: number,
+): void {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.beginPath();
+  coords.forEach(([x, y], i) => {
+    const p = bedPoint(ax, ay, x, y, z, rot, w, d, cam, 0);
+    if (i) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]);
+  });
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.stroke();
+  ctx.restore();
+}
+
+function traceRoundedPolygon(ctx: CanvasRenderingContext2D, points: [number, number][], radius: number): void {
+  const cut = (from: [number, number], to: [number, number]) => {
+    const dx = to[0] - from[0];
+    const dy = to[1] - from[1];
+    const length = Math.hypot(dx, dy) || 1;
+    const amount = Math.min(radius, length * 0.32) / length;
+    return [from[0] + dx * amount, from[1] + dy * amount] as [number, number];
+  };
+  const first = cut(points[0], points[points.length - 1]);
+  ctx.moveTo(first[0], first[1]);
+  for (let i = 0; i < points.length; i++) {
+    const current = points[i];
+    const next = points[(i + 1) % points.length];
+    const towardNext = cut(current, next);
+    const afterNext = cut(next, current);
+    ctx.lineTo(towardNext[0], towardNext[1]);
+    ctx.quadraticCurveTo(current[0], current[1], afterNext[0], afterNext[1]);
+  }
+  ctx.closePath();
 }
 
 function pieceDepth(p: Piece, rot: Rot, w: number, d: number, ax: number, ay: number): number {
