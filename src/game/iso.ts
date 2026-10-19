@@ -67,13 +67,25 @@ export function columnHits(
   height: number,
   cam: Cam,
 ): boolean {
+  return columnHitHeight(px, py, tileX, tileY, height, cam) !== null;
+}
+
+function columnHitHeight(
+  px: number,
+  py: number,
+  tileX: number,
+  tileY: number,
+  height: number,
+  cam: Cam,
+): number | null {
   const steps = Math.max(1, Math.ceil(height / 8));
+  let highestHit: number | null = null;
   for (let i = 0; i <= steps; i++) {
     const z = (height * i) / steps;
     const t = tileAt(px, py + z * cam.scale, cam);
-    if (t.x === tileX && t.y === tileY) return true;
+    if (t.x === tileX && t.y === tileY && (highestHit === null || z > highestHit)) highestHit = z;
   }
-  return false;
+  return highestHit;
 }
 
 export function itemDepth(item: Placed): number {
@@ -91,15 +103,24 @@ export type Pick =
   | null;
 
 export function pick(px: number, py: number, room: Room, cam: Cam): Pick {
+  let best: { uid: string; hitHeight: number; depth: number } | null = null;
   const items = [...room.items].sort((a, b) => itemDepth(b) - itemDepth(a) || b.y - a.y);
   for (const it of items) {
     const def = getDef(it.defId);
     if (!def) continue;
     const tiles = tilesOf(def, it.x, it.y, it.rot);
-    if (tiles.some((t) => columnHits(px, py, t.x, t.y, def.height + 12, cam))) {
-      return { kind: "item", uid: it.uid };
+    let hitHeight: number | null = null;
+    for (const tile of tiles) {
+      const z = columnHitHeight(px, py, tile.x, tile.y, def.height + 12, cam);
+      if (z !== null && (hitHeight === null || z > hitHeight)) hitHeight = z;
+    }
+    if (hitHeight === null) continue;
+    const depth = itemDepth(it);
+    if (!best || hitHeight > best.hitHeight || (hitHeight === best.hitHeight && depth > best.depth)) {
+      best = { uid: it.uid, hitHeight, depth };
     }
   }
+  if (best) return { kind: "item", uid: best.uid };
   const t = tileAt(px, py, cam);
   if (t.x >= 0 && t.y >= 0 && t.x < room.cols && t.y < room.rows) return { kind: "tile", ...t };
   return null;

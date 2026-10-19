@@ -51,7 +51,7 @@ export function blip(kind: "ok" | "no" | "coin"): void {
   if (!ctx || ctx.state !== "running") return;
   const o = ctx.createOscillator();
   const g = ctx.createGain();
-  o.type = "triangle";
+  o.type = kind === "coin" ? "square" : "triangle";
   o.frequency.value = kind === "no" ? 196 : kind === "coin" ? 680 : 440;
   g.gain.setValueAtTime(0.045, ctx.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.09);
@@ -59,4 +59,16 @@ export function blip(kind: "ok" | "no" | "coin"): void {
   g.connect(ctx.destination);
   o.start();
   o.stop(ctx.currentTime + 0.1);
+  if (kind === "coin") {
+    const second = ctx.createOscillator();
+    const secondGain = ctx.createGain();
+    second.type = "square";
+    second.frequency.setValueAtTime(988, ctx.currentTime + 0.07);
+    secondGain.gain.setValueAtTime(0.04, ctx.currentTime + 0.07);
+    secondGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.17);
+    second.connect(secondGain);
+    secondGain.connect(ctx.destination);
+    second.start(ctx.currentTime + 0.07);
+    second.stop(ctx.currentTime + 0.18);
+  }
 }

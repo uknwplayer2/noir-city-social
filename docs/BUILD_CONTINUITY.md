@@ -24,7 +24,7 @@ O APK é gravado em `output/NOIR-<versionName>.apk`. O script usa o toolchain lo
 ## Identidade e assinatura
 
 - `applicationId`: `com.patio.noir`.
-- Base pública: versão `1.42`, `versionCode` 44. Versão atual: `1.43`, `versionCode` 45.
+- Base pública: versão `1.42`, `versionCode` 44. Versão atual: `1.48`, `versionCode` 51. A 1.43 corrigiu o zoom ancorado no avatar; a 1.44 restaura sessão local opcional, o retorno à página principal, logout, janela de alerta arrastável, centralização do avatar e prévia viva da câmera; a 1.45 atualiza câmera e cobrinha; a 1.46 adiciona diretório de Equipe e e-mail interno local persistido, migrando saves para versão 5; a 1.46.1 corrige a seleção da caixa postal no React; a 1.47 reduz o rádio, adiciona efeito de moeda 8-bit às compras e reinício da câmera após salvar uma foto; a 1.48 corrige a seleção de móveis sobrepostos priorizando a altura do ponto tocado e usando profundidade como desempate. O diretório atual inclui somente cargos do perfil salvo neste aparelho; envio entre contas exige backend.
 - A chave de continuidade que assina os APKs já distribuídos é privada e deve permanecer fora deste repositório público. Guarde uma cópia segura e faça backup antes de alterar o processo de assinatura.
 - Antes de publicar uma versão, incremente `versionCode`, atualize `versionName` e confira pacote, assinatura e SHA-256 do APK.
 

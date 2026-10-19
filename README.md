@@ -4,12 +4,14 @@ Jogo social para Android, com salas isométricas, avatares, móveis, catálogo, 
 
 ## Base importada
 
-- Versão: `1.43` (`versionCode` 45)
+- Versão: `1.47` (`versionCode` 50)
 - Android `applicationId`: `com.patio.noir`
 - Cliente: TypeScript, React, Vite e Capacitor
 - Splash nativa em tela cheia com arte UKNWLAB, animação, barra de progresso e áudio 8-bit
 - Pesquisa técnica do kit CMS/banco Habbo registrada em `docs/research/`
 - Controles de regressão e histórico de releases em `docs/`
+- Diretório local de equipe e e-mail interno persistido no aparelho
+- Rádio reduzido a um terço, efeito de moeda 8-bit nas compras e opção de reiniciar a câmera após salvar
 
 ## Desenvolvimento
 

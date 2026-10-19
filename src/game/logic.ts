@@ -197,7 +197,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 export function repairSave(raw: unknown): SaveData | null {
-  if (!isRecord(raw) || ![1, 2, SAVE_VERSION].includes(Number(raw.version))) return null;
+  if (!isRecord(raw) || ![1, 2, 3, 4, SAVE_VERSION].includes(Number(raw.version))) return null;
   const legacyVersion = raw.version === 1;
   if (!isRecord(raw.room) || !Array.isArray(raw.inventory)) return null;
   const cols = clampInt(raw.room.cols, 4, 16, 8);
@@ -290,10 +290,18 @@ export function repairSave(raw: unknown): SaveData | null {
   const repairedHome = homeCandidate && isRecord(homeCandidate.room) && isRecord(homeCandidate.avatar)
     ? repairSave({ ...raw, room: homeCandidate.room, avatar: homeCandidate.avatar, homeState: undefined })
     : null;
+  const savedName = clip(raw.guestName, 16, "uknwplayer");
+  const legacyProfile = Number(raw.version) < SAVE_VERSION && savedName !== "Visita";
+  const internalMail = (Array.isArray(raw.internalMail) ? raw.internalMail : []).filter(isRecord).slice(-100).flatMap((mail) => {
+    if (typeof mail.id !== "string" || typeof mail.sender !== "string" || typeof mail.recipient !== "string" || typeof mail.subject !== "string" || typeof mail.body !== "string") return [];
+    return [{ id: mail.id.slice(0, 80), sender: clip(mail.sender, 16, "Equipe"), recipient: clip(mail.recipient, 16, "uknwplayer"), subject: clip(mail.subject, 80, "Sem assunto"), body: clip(mail.body, 2000, ""), sentAt: Math.max(0, Number(mail.sentAt) || 0), read: mail.read === true }];
+  });
   return {
     version: SAVE_VERSION,
-    entered: raw.entered === true,
-    guestName: clip(raw.guestName, 16, "Visita"),
+    entered: false,
+    guestName: savedName === "Visita" ? "uknwplayer" : savedName,
+    authenticated: raw.authenticated === true || legacyProfile,
+    rememberDevice: raw.rememberDevice === true || legacyProfile,
     role: raw.role === "admin" || raw.role === "moderator" || raw.role === "player" ? raw.role : Number(raw.version) < SAVE_VERSION ? "admin" : "player",
     lookId: getLook(String(raw.lookId ?? "")).id,
     coins: Math.max(0, Math.min(999999, Math.round(Number(raw.coins) || 0))),
@@ -302,6 +310,7 @@ export function repairSave(raw: unknown): SaveData | null {
     avatar: { x: stand.x, y: stand.y, dir: normRot(Number(avatarIn.dir) || 0) },
     ...(repairedHome ? { homeState: { room: repairedHome.room, avatar: repairedHome.avatar } } : {}),
     chatDuration: raw.chatDuration === 15000 || raw.chatDuration === 0 ? raw.chatDuration : 20000,
+    internalMail,
   };
 }
 

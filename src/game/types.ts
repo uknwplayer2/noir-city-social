@@ -133,12 +133,16 @@ export type Quest = { id: string; progress: number; claimed: boolean };
 /** Prototype roles are stored locally. Online permissions must move server-side. */
 export type UserRole = "player" | "moderator" | "admin";
 
-export const SAVE_VERSION = 3;
+export type InternalMail = { id: string; sender: string; recipient: string; subject: string; body: string; sentAt: number; read: boolean };
+
+export const SAVE_VERSION = 5;
 
 export type SaveData = {
   version: number;
   entered: boolean;
   guestName: string;
+  authenticated: boolean;
+  rememberDevice: boolean;
   role: UserRole;
   lookId: string;
   coins: number;
@@ -149,4 +153,5 @@ export type SaveData = {
   questDay?: string;
   quests?: Quest[];
   chatDuration?: 15000 | 20000 | 0;
+  internalMail: InternalMail[];
 };

@@ -3,7 +3,7 @@ import { AlertTriangle, Coins, Grid3X3, X } from "lucide-react";
 import { sayAs } from "@/game/sim";
 import { useGame } from "@/game/store";
 
-export function AdminConsole({ onClose }: { onClose: () => void }) {
+export function AdminConsole({ onClose, onSendAlert }: { onClose: () => void; onSendAlert: (message: string) => void }) {
   const role = useGame((s) => s.role);
   const guestName = useGame((s) => s.guestName);
   const [target, setTarget] = useState(guestName);
@@ -40,7 +40,7 @@ export function AdminConsole({ onClose }: { onClose: () => void }) {
           <label className="mt-4 flex flex-col gap-2 text-sm text-muted">Mensagem do alerta
             <textarea value={alert} onChange={(e) => setAlert(e.target.value)} maxLength={160} placeholder="Digite o aviso…" className="min-h-20 rounded-xl border border-white/10 bg-bg p-4 text-fg outline-none focus:border-primary" />
           </label>
-          <button type="button" disabled={!alert.trim()} onClick={() => { sayAs("Alerta da Administração", alert.trim(), 15000); setAlert(""); }} className="mt-4 h-12 w-full rounded-full bg-primary font-semibold text-primary-fg disabled:opacity-40">Enviar alerta no quarto</button>
+          <button type="button" disabled={!alert.trim()} onClick={() => { onSendAlert(alert.trim()); setAlert(""); }} className="mt-4 h-12 w-full rounded-full bg-primary font-semibold text-primary-fg disabled:opacity-40">Enviar alerta no quarto</button>
         </section>
       </div>
     </section>

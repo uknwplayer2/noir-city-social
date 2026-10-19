@@ -22,7 +22,10 @@ declare global {
   }
 }
 
-export type RoomViewHandle = { capture: () => string | null; zoom: (factor: number) => void };
+export type RoomViewHandle = { capture: () => string | null; previewStream: () => MediaStream | null; zoom: (factor: number) => void; pan: (x: number, y: number) => void; centerAvatar: () => void };
+
+const MIN_USER_SCALE = 0.55;
+const MAX_USER_SCALE = 3.2;
 
 function ghostOf(s: GameState): Ghost | null {
   const occupied = avatarTiles();
@@ -57,6 +60,7 @@ function ghostOf(s: GameState): Ghost | null {
 
 export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }>(function RoomView({ swallowTap }, forwardedRef) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const previewStreamRef = useRef<MediaStream | null>(null);
   const view = useRef({ userScale: 1, panX: 0, panY: 0 });
   const size = useRef({ w: 1, h: 1 });
   const camRef = useRef<Cam>({ scale: 1, panX: 0, panY: 0 });
@@ -75,7 +79,7 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
       sim.booted = true;
     };
     const unsub = useGame.persist.onFinishHydration(() => boot());
-    void Promise.resolve(useGame.persist.rehydrate()).then(() => boot());
+    if (useGame.persist.hasHydrated()) boot();
     window.__patio = {
       coins: () => useGame.getState().coins,
       items: () => useGame.getState().room.items.length,
@@ -87,6 +91,8 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     return () => {
       dead = true;
       unsub();
+      previewStreamRef.current?.getTracks().forEach((track) => track.stop());
+      previewStreamRef.current = null;
     };
   }, []);
 
@@ -208,7 +214,7 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     const dx = (point.x - current.panX) / current.scale;
     const dy = (point.y - current.panY) / current.scale;
     const anchor = { x: (dx / 32 + dy / 16) / 2, y: (dy / 16 - dx / 32) / 2 };
-    view.current.userScale = Math.min(2.4, Math.max(0.65, view.current.userScale * factor));
+    view.current.userScale = Math.min(MAX_USER_SCALE, Math.max(MIN_USER_SCALE, view.current.userScale * factor));
     const next = frameCamera(size.current.w, size.current.h, room.cols, room.rows, view.current.userScale, view.current.panX, view.current.panY);
     const projected = project(anchor.x, anchor.y, 0, next);
     view.current.panX += point.x - projected[0];
@@ -220,13 +226,27 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     return { x, y };
   }
 
+  function centerAvatar() {
+    const point = avatarScreenPoint();
+    view.current.panX += size.current.w / 2 - point.x;
+    view.current.panY += size.current.h / 2 - point.y;
+  }
+
   useImperativeHandle(forwardedRef, () => ({
     capture: () => {
       const canvas = canvasRef.current;
       if (!canvas) return null;
       try { return canvas.toDataURL("image/png"); } catch { return null; }
     },
+    previewStream: () => {
+      const canvas = canvasRef.current;
+      if (!canvas || typeof canvas.captureStream !== "function") return null;
+      if (!previewStreamRef.current) previewStreamRef.current = canvas.captureStream(12);
+      return previewStreamRef.current;
+    },
     zoom: (factor) => zoomAt(factor, avatarScreenPoint()),
+    pan: (x, y) => { view.current.panX += x; view.current.panY += y; },
+    centerAvatar,
   }));
 
   function onPointerDown(e: ReactPointerEvent<HTMLCanvasElement>) {
@@ -263,7 +283,7 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
       const center = { x: (pts[0]!.x + pts[1]!.x) / 2, y: (pts[0]!.y + pts[1]!.y) / 2 };
       if (!pinch.current) pinch.current = { dist, scale: view.current.userScale };
       else {
-        const nextScale = Math.min(2.4, Math.max(0.65, pinch.current.scale * (dist / pinch.current.dist)));
+        const nextScale = Math.min(MAX_USER_SCALE, Math.max(MIN_USER_SCALE, pinch.current.scale * (dist / pinch.current.dist)));
         zoomAt(nextScale / view.current.userScale, center);
       }
       return;
@@ -359,21 +379,14 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
         onContextMenu={(e) => e.preventDefault()}
       />
       <div className="pointer-events-none absolute top-3 right-3 flex flex-col gap-2">
+        <button type="button" className="pointer-events-auto grid size-11 place-items-center rounded-full bg-surface text-fg" onClick={centerAvatar} aria-label="Centralizar avatar">
+          <Crosshair className="size-5" />
+        </button>
         <button type="button" className="pointer-events-auto grid size-11 place-items-center rounded-full bg-surface text-fg" onClick={() => zoom(1.12)} aria-label="Aproximar">
           <Plus className="size-5" />
         </button>
         <button type="button" className="pointer-events-auto grid size-11 place-items-center rounded-full bg-surface text-fg" onClick={() => zoom(0.9)} aria-label="Afastar">
           <Minus className="size-5" />
-        </button>
-        <button
-          type="button"
-          className="pointer-events-auto grid size-11 place-items-center rounded-full bg-surface text-fg"
-          onClick={() => {
-            view.current = { userScale: 1, panX: 0, panY: 0 };
-          }}
-          aria-label="Centralizar quarto"
-        >
-          <Crosshair className="size-5" />
         </button>
       </div>
     </div>

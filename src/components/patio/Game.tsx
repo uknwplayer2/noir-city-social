@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
 import { Capacitor } from "@capacitor/core";
 import { Backpack, Coins, Footprints, Globe, Hand, Home, LayoutGrid, Move, Paintbrush, RotateCw, Smartphone, Store, Target } from "lucide-react";
 import { blip, stopMenuMusic, unlockAudio } from "@/game/audio";
@@ -11,12 +11,14 @@ import { HomeScreen } from "@/components/patio/HomeScreen";
 import { PhoneModal } from "@/components/patio/PhoneModal";
 import { RoomView, type RoomViewHandle } from "@/components/patio/RoomView";
 import { AdminConsole } from "@/components/patio/AdminConsole";
+import { AdminAlertWindow } from "@/components/patio/AdminAlertWindow";
 
 type PanelId = "bag" | "shop" | "adminShop" | "room" | "quests" | "public";
 
 export function Game() {
   const entered = useGame((s) => s.entered);
   const guestName = useGame((s) => s.guestName);
+  const authenticated = useGame((s) => s.authenticated);
   const role = useGame((s) => s.role);
   const lookId = useGame((s) => s.lookId);
   const coins = useGame((s) => s.coins);
@@ -33,8 +35,10 @@ export function Game() {
   const [panel, setPanel] = useState<PanelId | null>(null);
   const [chat, setChat] = useState("");
   const [showSplash, setShowSplash] = useState(() => !Capacitor.isNativePlatform());
+  const [gameReady, setGameReady] = useState(false);
   const [showPhone, setShowPhone] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [adminAlert, setAdminAlert] = useState("");
   const [panelHeight, setPanelHeight] = useState(54);
   const [draggingPanel, setDraggingPanel] = useState(false);
   const panelDrag = useRef<{ y: number; height: number } | null>(null);
@@ -46,6 +50,10 @@ export function Game() {
     const id = window.setTimeout(() => setShowSplash(false), 3000);
     return () => window.clearTimeout(id);
   }, [showSplash]);
+
+  useEffect(() => {
+    void Promise.resolve(useGame.persist.rehydrate()).finally(() => setGameReady(true));
+  }, []);
 
   useEffect(() => {
     if (entered) stopMenuMusic();
@@ -101,6 +109,8 @@ export function Game() {
     useGame.getState().enter(name, lookId);
   }
 
+  const panRoom = useCallback((x: number, y: number) => roomViewRef.current?.pan(x, y), []);
+
   function goToHome() {
     if (inOfficial) {
       useGame.getState().returnHome();
@@ -143,7 +153,7 @@ export function Game() {
 
   return (
     <div className="relative flex h-dvh flex-col bg-bg text-fg">
-      {!entered && <HomeScreen
+      {gameReady && !entered && <HomeScreen
         name={guestName || "uknwplayer"}
         coins={coins}
         onEnter={enterGame}
@@ -153,12 +163,17 @@ export function Game() {
         onDecorate={openDecorate}
         onPhone={() => setShowPhone(true)}
         onSaveName={(nextName) => useGame.getState().setGuestName(nextName)}
+        authenticated={authenticated}
+        onLogin={(name, remember) => useGame.getState().authenticate(name, remember)}
+        onLogout={() => useGame.getState().logout()}
+        teamMembers={role === "player" ? [] : [{ name: guestName, role, lookId }]}
+        onSendTeamMail={(recipient, subject, body) => useGame.getState().sendInternalMail(recipient, subject, body)}
       />}
-      {entered && <>
+      {gameReady && entered && <>
       <header className="safe-top flex items-center gap-2 px-2 py-3 sm:gap-3 sm:px-4">
         <span className="size-3 rotate-45 bg-primary" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="font-display text-xl font-semibold leading-none tracking-[0.14em] text-primary">NOIR <span className="text-xs tracking-normal text-muted">v1.43</span></p>
+          <p className="font-display text-xl font-semibold leading-none tracking-[0.14em] text-primary">NOIR <span className="text-xs tracking-normal text-muted">v1.48</span></p>
           <p className="truncate text-[10px] font-medium uppercase tracking-[0.14em] text-muted">Social Hotel · {roomName}</p>
         </div>
         <button type="button" onClick={goToHome} className="grid size-10 shrink-0 place-items-center rounded-full border border-primary/25 bg-surface text-primary sm:size-11" aria-label="Voltar ao menu inicial"><Home className="size-5" /></button>
@@ -302,8 +317,9 @@ export function Game() {
         />
       </aside>}
 
-      {showPhone && <PhoneModal onClose={() => setShowPhone(false)} onCapture={() => roomViewRef.current?.capture() ?? null} onZoom={(factor) => roomViewRef.current?.zoom(factor)} />}
-      {showAdmin && role === "admin" && <AdminConsole onClose={() => setShowAdmin(false)} />}
+      {showPhone && <PhoneModal onClose={() => setShowPhone(false)} onCapture={() => roomViewRef.current?.capture() ?? null} onZoom={(factor) => roomViewRef.current?.zoom(factor)} onPreviewStream={() => roomViewRef.current?.previewStream() ?? null} onPan={panRoom} />}
+      {showAdmin && role === "admin" && <AdminConsole onClose={() => setShowAdmin(false)} onSendAlert={setAdminAlert} />}
+      {adminAlert && <AdminAlertWindow message={adminAlert} onClose={() => setAdminAlert("")} />}
 
       {toast && (
         <p className="absolute top-16 left-1/2 z-30 -translate-x-1/2 rounded-full bg-surface px-4 py-2 text-sm shadow-lg" role="status">

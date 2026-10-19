@@ -390,7 +390,7 @@ export const CATALOG: FurniDef[] = [
     d: 1,
     layer: "object",
     sprite: noirRadioSprite,
-    spriteScale: 0.88,
+    spriteScale: 0.293,
     pieces: [box(0.12, 0.12, 0.76, 0.76, 0, 32, dark)],
   }),
   def({ id: "rooftop-pool", name: "Piscina Rooftop", blurb: "Piscina oficial do Rooftop Night", category: "decor", price: 0, w: 4, d: 4, layer: "object", adminOnly: true, sprite: rooftopPool, pieces: [box(0, 0, 4, 4, 0, 42, dark)] }),

@@ -4,7 +4,7 @@ import { getDef, getLook, sellPrice } from "@/game/catalog";
 import { createRooftopNightRoom } from "@/game/roomLayouts";
 import { createNexoOccupant } from "@/game/nexo";
 import { canPlace, normRot, relayout, repairSave } from "@/game/logic";
-import type { Avatar, InvItem, Pattern, Quest, Room, Rot, SaveData, Tile, Tool, UserRole } from "@/game/types";
+import type { Avatar, InternalMail, InvItem, Pattern, Quest, Room, Rot, SaveData, Tile, Tool, UserRole } from "@/game/types";
 import { SAVE_VERSION } from "@/game/types";
 
 export type GameState = SaveData & {
@@ -16,9 +16,14 @@ export type GameState = SaveData & {
   movingRot: Rot;
   toast: string | null;
   enter: (name: string, lookId: string) => void;
+  authenticate: (name: string, rememberDevice: boolean) => void;
+  logout: () => void;
   setGuestName: (name: string) => void;
   setRole: (name: string, role: UserRole) => boolean;
   grantCoins: (name: string, amount: number) => boolean;
+  awardMiniGameCoins: (amount: number) => void;
+  sendInternalMail: (recipient: string, subject: string, body: string) => boolean;
+  markInternalMailRead: (id: string) => void;
   leave: () => void;
   enterRooftop: () => void;
   returnHome: () => void;
@@ -101,7 +106,9 @@ export function createInitial(): SaveData {
   return {
     version: SAVE_VERSION,
     entered: false,
-    guestName: "Visita",
+    guestName: "uknwplayer",
+    authenticated: false,
+    rememberDevice: false,
     role: "admin",
     lookId: "barro",
     coins: 160,
@@ -111,6 +118,7 @@ export function createInitial(): SaveData {
     questDay,
     quests: dailyQuests(questDay),
     chatDuration: 20000,
+    internalMail: [],
   };
 }
 
@@ -171,9 +179,16 @@ export const useGame = create<GameState>()(
       enter: (name, lookId) =>
         set({
           entered: true,
-          guestName: name.trim().slice(0, 16) || "Visita",
+          guestName: name.trim().slice(0, 16) || "uknwplayer",
           lookId: getLook(lookId).id,
         }),
+      authenticate: (name, rememberDevice) => set({
+        guestName: name.trim().slice(0, 16) || "uknwplayer",
+        authenticated: true,
+        rememberDevice,
+        entered: false,
+      }),
+      logout: () => set({ authenticated: false, rememberDevice: false, entered: false, selectedUid: null, movingUid: null, armedUid: null, tool: "walk" }),
       setGuestName: (name) => set({ guestName: name.trim().slice(0, 16) || "uknwplayer" }),
       setRole: (name, role) => {
         const s = get();
@@ -188,6 +203,21 @@ export const useGame = create<GameState>()(
         set({ coins: Math.min(999999, s.coins + quantity), toast: `${quantity} moedas concedidas` });
         return true;
       },
+      awardMiniGameCoins: (amount) => {
+        const reward = Math.max(0, Math.min(2, Math.floor(amount)));
+        if (reward > 0) set((s) => ({ coins: Math.min(999999, s.coins + reward) }));
+      },
+      sendInternalMail: (recipient, subject, body) => {
+        const s = get();
+        const to = recipient.trim().slice(0, 16);
+        const title = subject.trim().slice(0, 80);
+        const message = body.trim().slice(0, 2000);
+        if (!to || !title || !message || s.role === "player") return false;
+        const mail: InternalMail = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`, sender: s.guestName, recipient: to, subject: title, body: message, sentAt: Date.now(), read: false };
+        set({ internalMail: [...s.internalMail, mail].slice(-100), toast: "E-mail enviado" });
+        return true;
+      },
+      markInternalMailRead: (id) => set((s) => ({ internalMail: s.internalMail.map((mail) => mail.id === id ? { ...mail, read: true } : mail) })),
       leave: () => set({ entered: false, selectedUid: null, movingUid: null, armedUid: null, tool: "walk" }),
       enterRooftop: () => {
         const s = get(); if (s.room.name === "Rooftop Night") return;
@@ -382,8 +412,10 @@ export const useGame = create<GameState>()(
       migrate: (persisted) => repairSave(persisted) ?? createInitial(),
       partialize: (s) => ({
         version: s.version,
-        entered: s.entered,
+        entered: false,
         guestName: s.guestName,
+        authenticated: s.rememberDevice && s.authenticated,
+        rememberDevice: s.rememberDevice,
         role: s.role,
         lookId: s.lookId,
         coins: s.coins,
@@ -394,6 +426,7 @@ export const useGame = create<GameState>()(
         questDay: s.questDay,
         quests: s.quests,
         chatDuration: s.chatDuration,
+        internalMail: s.internalMail,
       }),
       merge: (persisted, current) => {
         const fixed = repairSave(persisted);

@@ -1,8 +1,9 @@
-import { CalendarDays, DoorOpen, CircleHelp, Coins, Eye, EyeOff, Globe, Settings, ShoppingCart, Users, X } from "lucide-react";
+import { CalendarDays, DoorOpen, CircleHelp, Coins, Eye, EyeOff, Globe, LogOut, Settings, ShoppingCart, Users, X, Shield } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { startMenuMusic, unlockAudio } from "@/game/audio";
+import { TeamWindow, type TeamMember } from "@/components/patio/TeamWindow";
 
-type HomePanel = "login" | "profile" | "help" | null;
+type HomePanel = "login" | "profile" | "help" | "team" | null;
 
 export function HomeScreen({
   name,
@@ -14,6 +15,11 @@ export function HomeScreen({
   onDecorate,
   onPhone,
   onSaveName,
+  authenticated,
+  onLogin,
+  onLogout,
+  teamMembers,
+  onSendTeamMail,
 }: {
   name: string;
   coins: number;
@@ -24,10 +30,15 @@ export function HomeScreen({
   onDecorate: () => void;
   onPhone: () => void;
   onSaveName: (name: string) => void;
+  authenticated: boolean;
+  onLogin: (name: string, rememberDevice: boolean) => void;
+  onLogout: () => void;
+  teamMembers: TeamMember[];
+  onSendTeamMail: (recipient: string, subject: string, body: string) => boolean;
 }) {
-  const [dialog, setDialog] = useState<HomePanel>("login");
+  const [dialog, setDialog] = useState<HomePanel>(authenticated ? null : "login");
   const [editName, setEditName] = useState(name);
-  const [loginName, setLoginName] = useState(name || "uknwplayer");
+  const [loginName, setLoginName] = useState(authenticated && name !== "Visita" ? name : "");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberDevice, setRememberDevice] = useState(true);
@@ -36,10 +47,10 @@ export function HomeScreen({
   function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const safeName = loginName.trim().slice(0, 16) || "uknwplayer";
-    if (rememberDevice) onSaveName(safeName);
+    onSaveName(safeName);
     setPassword("");
     setDialog(null);
-    onEnter(safeName);
+    onLogin(safeName, rememberDevice);
   }
 
   return (
@@ -50,19 +61,20 @@ export function HomeScreen({
           <div className="font-display text-2xl font-semibold tracking-[0.16em] text-primary">♛ NOIR CITY</div>
           <div className="pl-1 text-[9px] uppercase tracking-[0.29em] text-white/70">Social MMD e Hunter</div>
         </div>
-        <button type="button" onClick={() => { setEditName(name); setDialog("profile"); }} className="flex min-w-0 items-center gap-3 rounded-2xl border border-primary/50 bg-[#17151b]/90 p-3 text-left shadow-xl">
+        <div className="flex min-w-0 items-center gap-3 rounded-2xl border border-primary/50 bg-[#17151b]/90 p-3 text-left shadow-xl">
           <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary/20 font-display text-xl text-primary">{(name || "U").slice(0, 1).toUpperCase()}</span>
           <span className="min-w-0"><span className="block max-w-28 truncate text-xs font-semibold">{name || "uknwplayer"}</span><span className="block text-[10px] text-white/65">Nível 1</span><span className="flex items-center gap-1 text-xs text-primary"><Coins className="size-3" />{coins.toLocaleString("pt-BR")}</span></span>
-          <Settings className="size-5 shrink-0 text-primary" />
-        </button>
+        </div>
       </header>
 
       <div className="relative z-10 mt-3 flex flex-col gap-2 px-4">
-        <HomeButton icon={<DoorOpen />} active onClick={() => setDialog("login")}>Entrar</HomeButton>
+        {authenticated ? <HomeButton icon={<DoorOpen />} active onClick={() => onEnter(name)}>Entrar</HomeButton> : <HomeButton icon={<DoorOpen />} active onClick={() => setDialog("login")}>Entrar</HomeButton>}
         <HomeButton icon={<Settings />} onClick={() => { setEditName(name); setDialog("profile"); }}>Configurações</HomeButton>
+        <HomeButton icon={<Shield />} onClick={() => setDialog("team")}>Equipe</HomeButton>
         <HomeButton icon={<Users />} onClick={onPhone}>Comunidade</HomeButton>
         <HomeButton icon={<ShoppingCart />} onClick={onShop}>Loja</HomeButton>
         <HomeButton icon={<CircleHelp />} onClick={() => setDialog("help")}>Ajuda</HomeButton>
+        {authenticated && <HomeButton icon={<LogOut />} onClick={() => { onLogout(); setLoginName(name); setDialog("login"); }}>Sair</HomeButton>}
       </div>
 
       <section className="relative z-10 mt-auto px-4 pb-4 pt-10">
@@ -79,7 +91,7 @@ export function HomeScreen({
       </section>
 
       {dialog && <div className="absolute inset-0 z-30 grid place-items-center overflow-y-auto bg-black/75 p-4 sm:p-5" role="dialog" aria-modal="true" aria-label={dialog === "login" ? "Entrar no Noir City" : undefined}>
-        {dialog === "login" ? <section className="relative my-auto w-full max-w-md rounded-2xl border border-primary/60 bg-[#17151b]/95 p-5 shadow-2xl backdrop-blur-sm sm:p-6">
+        {dialog === "team" ? <TeamWindow members={teamMembers} onClose={() => setDialog(null)} onSendMail={onSendTeamMail} /> : dialog === "login" ? <section className="relative my-auto w-full max-w-md rounded-2xl border border-primary/60 bg-[#17151b]/95 p-5 shadow-2xl backdrop-blur-sm sm:p-6">
           <button type="button" onClick={() => setDialog(null)} className="absolute right-4 top-4 grid size-9 place-items-center rounded-full border border-white/15 bg-[#111016] text-white/75" aria-label="Fechar login"><X className="size-5" /></button>
           <div className="pr-10"><p className="font-display text-3xl font-bold tracking-[0.12em] text-primary">NOIR CITY</p><p className="mt-1 text-[9px] uppercase tracking-[0.32em] text-white/65">Social MMD e Hunter</p></div>
           <h2 className="mt-7 font-display text-3xl">Entrar</h2>
@@ -91,7 +103,7 @@ export function HomeScreen({
             <button type="submit" className="h-12 w-full rounded-full bg-primary font-semibold text-[#21170e]">Entrar na cidade</button>
           </form>
           <button type="button" onClick={() => setFeedback("Cadastro online ainda não está conectado; este protótipo usa um perfil local.")} className="mt-3 h-11 w-full rounded-full border border-primary/35 text-primary">Criar conta</button>
-          <p className="mt-4 text-center text-xs leading-5 text-white/55">Acesso local neste dispositivo · v1.43<br />A conta online ainda não está conectada; a senha não é enviada nem validada.</p>
+          <p className="mt-4 text-center text-xs leading-5 text-white/55">Acesso local neste dispositivo · v1.48<br />A conta online ainda não está conectada; a senha não é enviada nem validada.</p>
           {feedback && <p className="mt-3 rounded-lg bg-black/30 p-3 text-xs leading-5 text-white/75" role="status">{feedback}</p>}
         </section> : <section className="w-full max-w-md rounded-2xl border border-primary/60 bg-[#1b1920] p-5 shadow-2xl">
           <header className="mb-4 flex items-center justify-between"><h2 className="font-display text-2xl">{dialog === "profile" ? "Perfil e configurações" : "Ajuda"}</h2><button type="button" onClick={() => setDialog(null)} aria-label="Fechar"><X /></button></header>
