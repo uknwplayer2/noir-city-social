@@ -215,13 +215,18 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     view.current.panY += point.y - projected[1];
   }
 
+  function avatarScreenPoint() {
+    const [x, y] = project(sim.x, sim.y, 0, camRef.current);
+    return { x, y };
+  }
+
   useImperativeHandle(forwardedRef, () => ({
     capture: () => {
       const canvas = canvasRef.current;
       if (!canvas) return null;
       try { return canvas.toDataURL("image/png"); } catch { return null; }
     },
-    zoom: (factor) => zoomAt(factor, { x: size.current.w / 2, y: size.current.h / 2 }),
+    zoom: (factor) => zoomAt(factor, avatarScreenPoint()),
   }));
 
   function onPointerDown(e: ReactPointerEvent<HTMLCanvasElement>) {
@@ -339,7 +344,7 @@ export const RoomView = forwardRef<RoomViewHandle, { swallowTap: () => boolean }
     if (inside && !requestWalk(t)) blip("no");
   }
 
-  function zoom(by: number) { zoomAt(by, { x: size.current.w / 2, y: size.current.h / 2 }); }
+  function zoom(by: number) { zoomAt(by, avatarScreenPoint()); }
 
   return (
     <div className="absolute inset-0">

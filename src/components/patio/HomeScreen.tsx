@@ -91,7 +91,7 @@ export function HomeScreen({
             <button type="submit" className="h-12 w-full rounded-full bg-primary font-semibold text-[#21170e]">Entrar na cidade</button>
           </form>
           <button type="button" onClick={() => setFeedback("Cadastro online ainda não está conectado; este protótipo usa um perfil local.")} className="mt-3 h-11 w-full rounded-full border border-primary/35 text-primary">Criar conta</button>
-          <p className="mt-4 text-center text-xs leading-5 text-white/55">Acesso local neste dispositivo · v1.42<br />A conta online ainda não está conectada; a senha não é enviada nem validada.</p>
+          <p className="mt-4 text-center text-xs leading-5 text-white/55">Acesso local neste dispositivo · v1.43<br />A conta online ainda não está conectada; a senha não é enviada nem validada.</p>
           {feedback && <p className="mt-3 rounded-lg bg-black/30 p-3 text-xs leading-5 text-white/75" role="status">{feedback}</p>}
         </section> : <section className="w-full max-w-md rounded-2xl border border-primary/60 bg-[#1b1920] p-5 shadow-2xl">
           <header className="mb-4 flex items-center justify-between"><h2 className="font-display text-2xl">{dialog === "profile" ? "Perfil e configurações" : "Ajuda"}</h2><button type="button" onClick={() => setDialog(null)} aria-label="Fechar"><X /></button></header>

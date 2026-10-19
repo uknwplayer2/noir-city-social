@@ -4,7 +4,7 @@ Jogo social para Android, com salas isométricas, avatares, móveis, catálogo, 
 
 ## Base importada
 
-- Versão: `1.42` (`versionCode` 44)
+- Versão: `1.43` (`versionCode` 45)
 - Android `applicationId`: `com.patio.noir`
 - Cliente: TypeScript, React, Vite e Capacitor
 - Splash nativa em tela cheia com arte UKNWLAB, animação, barra de progresso e áudio 8-bit

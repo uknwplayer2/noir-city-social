@@ -24,7 +24,7 @@ O APK é gravado em `output/NOIR-<versionName>.apk`. O script usa o toolchain lo
 ## Identidade e assinatura
 
 - `applicationId`: `com.patio.noir`.
-- Base deste snapshot: versão `1.42`, `versionCode` 44.
+- Base pública: versão `1.42`, `versionCode` 44. Versão atual: `1.43`, `versionCode` 45.
 - A chave de continuidade que assina os APKs já distribuídos é privada e deve permanecer fora deste repositório público. Guarde uma cópia segura e faça backup antes de alterar o processo de assinatura.
 - Antes de publicar uma versão, incremente `versionCode`, atualize `versionName` e confira pacote, assinatura e SHA-256 do APK.
 
