@@ -1,4 +1,5 @@
 import type { BoxPiece, FurniDef, Look, Pattern, Piece, Rot, SpriteFrame, Swatch } from "@/game/types";
+import camaLuxoSprite from "@/game/assets/furniture/cama-luxo-sprite.png";
 import rooftopBar from "@/game/assets/rooftop/bar.webp";
 import rooftopPlanter from "@/game/assets/rooftop/planter.webp";
 import rooftopPool from "@/game/assets/rooftop/pool.webp";
@@ -294,6 +295,31 @@ export const CATALOG: FurniDef[] = [
     canLay: true,
     pieces: [
       // Metadata de colisão/altura; a geometria visível é desenhada por drawNoirBed.
+      box(0.08, 0.06, 1.84, 1.88, 0, 10, woodDark),
+      box(0.06, 0.02, 1.88, 0.16, 10, 34, woodDark),
+      box(0.12, 0.18, 1.76, 1.66, 10, 9, linen),
+    ],
+  }),
+  def({
+    id: "cama-luxo",
+    name: "Cama de Luxo Noir",
+    blurb: "Cama premium com madeira escura, detalhes dourados e roupa de cama bordô",
+    category: "assento",
+    price: 250,
+    w: 2,
+    d: 2,
+    layer: "object",
+    sprite: camaLuxoSprite,
+    spriteFrames: [
+      { x: 0, y: 0, width: 384, height: 354 },
+      { x: 384, y: 0, width: 384, height: 354 },
+      { x: 768, y: 0, width: 384, height: 354 },
+      { x: 1152, y: 0, width: 384, height: 354 },
+    ],
+    spriteScale: 1,
+    canSit: true,
+    canLay: true,
+    pieces: [
       box(0.08, 0.06, 1.84, 1.88, 0, 10, woodDark),
       box(0.06, 0.02, 1.88, 0.16, 10, 34, woodDark),
       box(0.12, 0.18, 1.76, 1.66, 10, 9, linen),
