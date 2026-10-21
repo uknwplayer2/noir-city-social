@@ -1,9 +1,12 @@
 import { CalendarDays, DoorOpen, CircleHelp, Coins, Eye, EyeOff, Globe, LogOut, Settings, ShoppingCart, Users, X, Shield } from "lucide-react";
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { startMenuMusic, unlockAudio } from "@/game/audio";
 import { TeamWindow, type TeamMember } from "@/components/patio/TeamWindow";
 
-type HomePanel = "login" | "profile" | "help" | "team" | null;
+type HomePanel = "login" | "profile" | "help" | "updates" | "team" | null;
+
+const UPDATE_VERSION = "1.56";
+const UPDATE_STORAGE_KEY = "noir-city-update-seen";
 
 export function HomeScreen({
   name,
@@ -43,6 +46,26 @@ export function HomeScreen({
   const [showPassword, setShowPassword] = useState(false);
   const [rememberDevice, setRememberDevice] = useState(true);
   const [feedback, setFeedback] = useState("");
+
+  const autoUpdatesAttempted = useRef(false);
+
+  useEffect(() => {
+    if (!authenticated || dialog !== null || autoUpdatesAttempted.current) return;
+
+    autoUpdatesAttempted.current = true;
+
+    try {
+      if (window.localStorage.getItem(UPDATE_STORAGE_KEY) === UPDATE_VERSION) {
+        return;
+      }
+
+      window.localStorage.setItem(UPDATE_STORAGE_KEY, UPDATE_VERSION);
+    } catch {
+      // Evita nova tentativa automática nesta montagem se o armazenamento falhar.
+    }
+
+    setDialog("updates");
+  }, [authenticated, dialog]);
 
   function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -90,7 +113,7 @@ export function HomeScreen({
         </div>
       </section>
 
-      {dialog && <div className="absolute inset-0 z-30 grid place-items-center overflow-y-auto bg-black/75 p-4 sm:p-5" role="dialog" aria-modal="true" aria-label={dialog === "login" ? "Entrar no Noir City" : undefined}>
+      {dialog && <div className="absolute inset-0 z-30 grid place-items-center overflow-y-auto bg-black/75 p-4 sm:p-5" role="dialog" aria-modal="true" aria-label={dialog === "login" ? "Entrar no Noir City" : dialog === "updates" ? "Notas da atualização" : undefined}>
         {dialog === "team" ? <TeamWindow members={teamMembers} onClose={() => setDialog(null)} onSendMail={onSendTeamMail} /> : dialog === "login" ? <section className="relative my-auto w-full max-w-md rounded-2xl border border-primary/60 bg-[#17151b]/95 p-5 shadow-2xl backdrop-blur-sm sm:p-6">
           <button type="button" onClick={() => setDialog(null)} className="absolute right-4 top-4 grid size-9 place-items-center rounded-full border border-white/15 bg-[#111016] text-white/75" aria-label="Fechar login"><X className="size-5" /></button>
           <div className="pr-10"><p className="font-display text-3xl font-bold tracking-[0.12em] text-primary">NOIR CITY</p><p className="mt-1 text-[9px] uppercase tracking-[0.32em] text-white/65">Social MMD e Hunter</p></div>
@@ -103,11 +126,11 @@ export function HomeScreen({
             <button type="submit" className="h-12 w-full rounded-full bg-primary font-semibold text-[#21170e]">Entrar na cidade</button>
           </form>
           <button type="button" onClick={() => setFeedback("Cadastro online ainda não está conectado; este protótipo usa um perfil local.")} className="mt-3 h-11 w-full rounded-full border border-primary/35 text-primary">Criar conta</button>
-          <p className="mt-4 text-center text-xs leading-5 text-white/55">Acesso local neste dispositivo · v1.55<br />A conta online ainda não está conectada; a senha não é enviada nem validada.</p>
+          <p className="mt-4 text-center text-xs leading-5 text-white/55">Acesso local neste dispositivo · v1.56<br />A conta online ainda não está conectada; a senha não é enviada nem validada.</p>
           {feedback && <p className="mt-3 rounded-lg bg-black/30 p-3 text-xs leading-5 text-white/75" role="status">{feedback}</p>}
         </section> : <section className="w-full max-w-md rounded-2xl border border-primary/60 bg-[#1b1920] p-5 shadow-2xl">
-          <header className="mb-4 flex items-center justify-between"><h2 className="font-display text-2xl">{dialog === "profile" ? "Perfil e configurações" : "Ajuda"}</h2><button type="button" onClick={() => setDialog(null)} aria-label="Fechar"><X /></button></header>
-          {dialog === "profile" ? <><label className="block text-sm text-white/75">Nome no jogo<input value={editName} maxLength={16} onChange={(event) => setEditName(event.target.value)} className="mt-2 h-12 w-full rounded-xl border border-primary/30 bg-[#111016] px-3 text-white outline-none focus:ring-2 focus:ring-primary" /></label><p className="mt-3 text-sm leading-6 text-white/75">No quarto, use <strong>Andar</strong> para caminhar, <strong>Mexer</strong> para organizar os móveis e o globo para visitar salões oficiais.</p><button type="button" onClick={() => { onSaveName(editName); setDialog(null); }} className="mt-5 h-11 w-full rounded-full bg-primary font-semibold text-[#21170e]">Salvar</button></> : <><p className="text-sm leading-6 text-white/75">Toque no piso para caminhar. Use o Catálogo para comprar móveis, a Mochila para colocá-los e o globo para visitar o Rooftop Night.</p><button type="button" onClick={() => setDialog(null)} className="mt-5 h-11 w-full rounded-full bg-primary font-semibold text-[#21170e]">Entendi</button></>}
+          <header className="mb-4 flex items-center justify-between"><h2 className="font-display text-2xl">{dialog === "profile" ? "Perfil e configurações" : dialog === "updates" ? "Novidades do Noir City" : "Ajuda"}</h2><button type="button" onClick={() => setDialog(null)} aria-label="Fechar"><X /></button></header>
+          {dialog === "profile" ? <><label className="block text-sm text-white/75">Nome no jogo<input value={editName} maxLength={16} onChange={(event) => setEditName(event.target.value)} className="mt-2 h-12 w-full rounded-xl border border-primary/30 bg-[#111016] px-3 text-white outline-none focus:ring-2 focus:ring-primary" /></label><p className="mt-3 text-sm leading-6 text-white/75">No quarto, use <strong>Andar</strong> para caminhar, <strong>Mexer</strong> para organizar os móveis e o globo para visitar salões oficiais.</p><button type="button" onClick={() => { onSaveName(editName); setDialog(null); }} className="mt-5 h-11 w-full rounded-full bg-primary font-semibold text-[#21170e]">Salvar</button></> : dialog === "updates" ? <><div className="mb-4 inline-flex rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-semibold tracking-widest text-primary">VERSÃO {UPDATE_VERSION}</div><p className="text-sm leading-6 text-white/75">Confira as novidades desta atualização do Noir City:</p><ul className="mt-4 space-y-3 text-sm leading-6 text-white/80"><li><strong className="text-primary">• Movimento:</strong> ajuste no posicionamento do controle de movimento diagonal.</li><li><strong className="text-primary">• Cama de Luxo Noir:</strong> ajuste de escala para melhorar o encaixe visual no quarto.</li><li><strong className="text-primary">• Polimento:</strong> melhorias na apresentação dos móveis e nos controles do jogo.</li></ul><button type="button" onClick={() => setDialog(null)} className="mt-5 h-11 w-full rounded-full bg-primary font-semibold text-[#21170e]">Continuar</button></> : <><p className="text-sm leading-6 text-white/75">Toque no piso para caminhar. Use o Catálogo para comprar móveis, a Mochila para colocá-los e o globo para visitar o Rooftop Night.</p><button type="button" onClick={() => setDialog("updates")} className="mt-4 h-11 w-full rounded-full border border-primary/50 font-semibold text-primary">Notas da atualização</button><button type="button" onClick={() => setDialog(null)} className="mt-3 h-11 w-full rounded-full bg-primary font-semibold text-[#21170e]">Entendi</button></>}
         </section>}
       </div>}
     </main>

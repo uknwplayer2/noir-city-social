@@ -219,7 +219,7 @@ function RoomSettings({ inOfficial }: { inOfficial: boolean }) {
           onClick={() => useGame.getState().setDiagonalMovement(room.diagonalMovement !== true)}
           className={`relative h-8 w-14 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${room.diagonalMovement ? "bg-primary" : "bg-white/20"}`}
         >
-          <span className={`absolute top-1 size-6 rounded-full bg-white shadow transition-transform ${room.diagonalMovement ? "translate-x-7" : "translate-x-1"}`} />
+          <span className={`absolute left-1 top-1 size-6 rounded-full bg-white shadow transition-transform ${room.diagonalMovement ? "translate-x-6" : "translate-x-0"}`} />
         </button>
       </section>
       <Field label="Tamanho">

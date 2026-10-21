@@ -316,7 +316,7 @@ export const CATALOG: FurniDef[] = [
       { x: 768, y: 0, width: 384, height: 354 },
       { x: 1152, y: 0, width: 384, height: 354 },
     ],
-    spriteScale: 1,
+    spriteScale: 0.8,
     canSit: true,
     canLay: true,
     pieces: [
