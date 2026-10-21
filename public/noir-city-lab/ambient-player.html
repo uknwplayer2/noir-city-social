@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#21170f">
+
+<title>Noir Lounge — Reprodutor Central</title>
+
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #21170f;
+  --panel: #201e23;
+  --border: #494047;
+  --text: #f2eadb;
+  --muted: #b2a28b;
+  --accent: #d9aa68;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at top, #29232a 0%, transparent 45%),
+    var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.container {
+  width: min(100% - 32px, 960px);
+  margin: auto;
+}
+
+header {
+  padding: 38px 0 26px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #494047;
+  border-radius: 16px;
+  background: #29232a;
+  font-size: 28px;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(25px, 5vw, 36px);
+  letter-spacing: 1px;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin: 5px 0 0;
+  font-size: 14px;
+}
+
+.intro {
+  padding: 28px 0 18px;
+}
+
+.intro h2 {
+  margin: 0 0 8px;
+  font-size: 23px;
+}
+
+.intro p {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.section-title {
+  margin: 28px 0 15px;
+  font-size: 17px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding-bottom: 30px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 20px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color .2s, transform .2s;
+}
+
+a.card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.icon {
+  font-size: 32px;
+  margin-bottom: 15px;
+}
+
+.card h3 {
+  margin: 0 0 9px;
+  font-size: 17px;
+}
+
+.card p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0 0 20px;
+  flex-grow: 1;
+}
+
+.button {
+  display: block;
+  text-align: center;
+  background: #29232a;
+  border: 1px solid #494047;
+  border-radius: 10px;
+  padding: 11px 8px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.future {
+  opacity: .72;
+}
+
+.future .button {
+  background: #201e23;
+  border-color: #494047;
+  color: #b2a28b;
+}
+
+.badge {
+  align-self: flex-start;
+  margin-bottom: 12px;
+  border-radius: 20px;
+  padding: 4px 9px;
+  background: #20352a;
+  color: #9de2b6;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.future .badge {
+  background: #201e23;
+  color: #b2a28b;
+}
+
+footer {
+  border-top: 1px solid var(--border);
+  padding: 22px 0 32px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+@media (max-width: 540px) {
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  header {
+    padding-top: 28px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+}
+</style>
+
+<style id="noir-luxury-theme">
+:root {
+  --bg: #21170f;
+  --panel: #201e23;
+  --panel-raised: #29232a;
+  --border: #494047;
+  --gold: #d9aa68;
+  --text: #f2eadb;
+  --muted: #b2a28b;
+  color-scheme: dark;
+}
+
+html {
+  background: #21170f;
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 50% 0%,
+      rgba(217,170,104,.07), transparent 52%),
+    #21170f !important;
+  color: #f2eadb !important;
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+h1, h2, h3 {
+  color: #f2eadb;
+  letter-spacing: -.025em;
+}
+
+h1 {
+  font-weight: 650;
+}
+
+h1, h2 {
+  text-wrap: balance;
+}
+
+p, label, small {
+  color: inherit;
+}
+
+a {
+  color: #d9aa68;
+  text-decoration-color: rgba(217,170,104,.4);
+  text-underline-offset: 4px;
+}
+
+a:hover {
+  color: #f2d5a5;
+}
+
+button, .button, a.button {
+  border-radius: 9px;
+  transition: background-color .18s ease,
+              border-color .18s ease,
+              transform .18s ease;
+}
+
+button {
+  border-color: #494047;
+}
+
+button:hover {
+  border-color: #d9aa68;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #d9aa68;
+  outline-offset: 3px;
+}
+
+input, select, textarea {
+  color: #f2eadb;
+  background-color: #201e23;
+  border-color: #494047;
+  border-radius: 8px;
+  accent-color: #d9aa68;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid #494047;
+}
+
+.tool-card, .card, .panel, .tool, .feature-card {
+  background-color: #201e23;
+  border: 1px solid #494047;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+}
+
+.tool-card:hover, .card:hover, .feature-card:hover {
+  border-color: rgba(217,170,104,.55);
+}
+
+header {
+  border-color: #494047;
+}
+
+::selection {
+  color: #21170f;
+  background: #d9aa68;
+}
+
+@media (max-width: 600px) {
+  body {
+    line-height: 1.55;
+  }
+
+  button, input, select {
+    min-height: 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+
+/* NOIR PREMIUM LAYOUT START */
+
+/* Cabeçalho refinado */
+header {
+  position: relative;
+  padding: 34px 0 28px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(
+    180deg,
+    rgba(217,170,104,.045),
+    transparent
+  );
+}
+
+header::after {
+  content: "";
+  display: block;
+  width: min(100% - 32px, 960px);
+  height: 1px;
+  margin: 28px auto -29px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(217,170,104,.55),
+    transparent
+  );
+}
+
+.brand {
+  gap: 16px;
+}
+
+.logo {
+  flex: 0 0 56px;
+  width: 56px;
+  height: 56px;
+  border: 1px solid rgba(217,170,104,.45);
+  border-radius: 15px;
+  background: linear-gradient(145deg, #29232a, #201e23);
+  box-shadow: 0 6px 20px rgba(0,0,0,.16);
+}
+
+h1 {
+  font-weight: 650;
+  letter-spacing: .09em;
+  line-height: 1.2;
+}
+
+.subtitle {
+  margin-top: 7px;
+  letter-spacing: .015em;
+}
+
+/* Área de boas-vindas */
+.intro {
+  position: relative;
+  margin-top: 28px;
+  padding: 27px 26px;
+  overflow: hidden;
+  border: 1px solid rgba(217,170,104,.20);
+  border-radius: 15px;
+  background:
+    linear-gradient(115deg, rgba(217,170,104,.065), transparent 70%),
+    #201e23;
+}
+
+.intro::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 18px;
+  bottom: 18px;
+  width: 2px;
+  background: #d9aa68;
+  opacity: .8;
+}
+
+.intro h2 {
+  font-size: clamp(21px, 4vw, 26px);
+  letter-spacing: -.025em;
+}
+
+.intro p {
+  max-width: 650px;
+  font-size: 14px;
+}
+
+/* Título da seção */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 34px 0 17px;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: .12em;
+  color: #d9aa68;
+}
+
+.section-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, #494047, transparent);
+}
+
+/* Cartões de ferramentas */
+.grid {
+  gap: 17px;
+  align-items: stretch;
+}
+
+.card {
+  position: relative;
+  padding: 23px;
+  overflow: hidden;
+  border-color: #494047;
+  border-radius: 13px;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.018), transparent 60%),
+    #201e23;
+  box-shadow: 0 8px 24px rgba(0,0,0,.10);
+  transition:
+    border-color .2s ease,
+    background-color .2s ease,
+    box-shadow .2s ease,
+    transform .2s ease;
+}
+
+a.card:hover {
+  border-color: rgba(217,170,104,.65);
+  background-color: #29232a;
+  box-shadow: 0 12px 28px rgba(0,0,0,.19);
+  transform: translateY(-3px);
+}
+
+.card:focus-visible {
+  outline: 2px solid #d9aa68;
+  outline-offset: 4px;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 18px;
+  border: 1px solid rgba(217,170,104,.24);
+  border-radius: 12px;
+  background: rgba(217,170,104,.055);
+  font-size: 27px;
+}
+
+.card h3 {
+  font-size: 17px;
+  font-weight: 620;
+  letter-spacing: -.015em;
+  line-height: 1.4;
+}
+
+.card p {
+  font-size: 13px;
+  line-height: 1.75;
+}
+
+.badge {
+  border-radius: 5px;
+  letter-spacing: .065em;
+  font-size: 10px;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  margin-top: 14px;
+  padding: 10px 13px;
+  border: 1px solid rgba(217,170,104,.35);
+  border-radius: 7px;
+  background: rgba(217,170,104,.07);
+  color: #d9aa68;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .015em;
+  transition:
+    background-color .2s ease,
+    border-color .2s ease,
+    color .2s ease;
+}
+
+a.card:hover .button {
+  border-color: #d9aa68;
+  background: #d9aa68;
+  color: #21170f;
+}
+
+/* Ferramentas futuras: discretas, sem competir com as disponíveis */
+.card.future {
+  background: rgba(32,30,35,.62);
+  box-shadow: none;
+}
+
+.card.future .icon {
+  opacity: .78;
+}
+
+.card.future .button {
+  border-color: #494047;
+  background: transparent;
+  color: #b2a28b;
+}
+
+/* Rodapé */
+footer {
+  color: #b2a28b;
+  border-color: #494047;
+}
+
+/* Acessibilidade e movimento */
+@media (prefers-reduced-motion: reduce) {
+  .card, .button, a.card:hover {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* Layout para celular */
+@media (max-width: 600px) {
+  .container {
+    width: min(100% - 28px, 960px);
+  }
+
+  header {
+    padding: 27px 0 23px;
+  }
+
+  header::after {
+    width: calc(100% - 28px);
+  }
+
+  .brand {
+    gap: 12px;
+  }
+
+  .logo {
+    flex-basis: 47px;
+    width: 47px;
+    height: 47px;
+    border-radius: 12px;
+    font-size: 24px;
+  }
+
+  h1 {
+    font-size: clamp(20px, 6vw, 29px);
+    letter-spacing: .055em;
+  }
+
+  .subtitle {
+    max-width: 245px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .intro {
+    margin-top: 22px;
+    padding: 23px 19px;
+  }
+
+  .intro h2 {
+    font-size: 21px;
+  }
+
+  .intro p {
+    font-size: 13px;
+  }
+
+  .section-title {
+    margin-top: 29px;
+    font-size: 12px;
+  }
+
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 13px;
+  }
+
+  .card {
+    padding: 20px;
+  }
+
+  .card p {
+    font-size: 13px;
+  }
+
+  .button {
+    min-height: 44px;
+  }
+}
+
+/* NOIR PREMIUM LAYOUT END */
+
+</style>
+
+
+<style id="noir-ambient-styles">
+#noir-ambient-player {
+  position: fixed;
+  z-index: 9999;
+  top: 14px;
+  right: 14px;
+  color: #f2eadb;
+  font: 14px/1.5 Inter, "Segoe UI", system-ui, sans-serif;
+}
+#noir-ambient-toggle {
+  width: 46px;
+  height: 46px;
+  border: 1px solid #d9aa68;
+  border-radius: 50%;
+  background: #201e23;
+  color: #d9aa68;
+  font-size: 23px;
+  cursor: pointer;
+  box-shadow: 0 5px 22px #0006;
+}
+#noir-ambient-toggle:hover { background: #29232a; }
+#noir-ambient-panel {
+  display: none;
+  position: absolute;
+  top: 54px;
+  right: 0;
+  width: min(330px, calc(100vw - 28px));
+  box-sizing: border-box;
+  padding: 20px;
+  border: 1px solid #494047;
+  border-radius: 15px;
+  background: linear-gradient(145deg,#29232a,#201e23 70%);
+  box-shadow: 0 18px 55px #0009;
+}
+#noir-ambient-panel.open { display: block; }
+.noir-audio-eyebrow {
+  margin: 0 0 3px;
+  color: #d9aa68;
+  font-size: 10px;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+#noir-ambient-panel h2 {
+  margin: 0 0 15px;
+  color: #f2eadb;
+  font-size: 20px;
+}
+#noir-audio-track {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px;
+  border: 1px solid #494047;
+  border-radius: 8px;
+  background: #201e23;
+  color: #f2eadb;
+  font: inherit;
+}
+#noir-audio-now {
+  min-height: 42px;
+  padding: 12px 0 8px;
+}
+#noir-audio-title { color: #f2eadb; font-weight: 650; }
+#noir-audio-style { color: #b2a28b; font-size: 12px; }
+.noir-audio-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0 5px;
+  color: #b2a28b;
+  font-size: 12px;
+}
+#noir-audio-volume {
+  width: 100%;
+  accent-color: #d9aa68;
+}
+.noir-audio-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 7px;
+  margin-top: 14px;
+}
+#noir-ambient-panel .noir-audio-btn {
+  min-height: 42px;
+  padding: 8px 5px;
+  border: 1px solid #494047;
+  border-radius: 8px;
+  background: #201e23;
+  color: #f2eadb;
+  font: inherit;
+  cursor: pointer;
+}
+#noir-ambient-panel .noir-audio-btn.primary {
+  border-color: #d9aa68;
+  background: #d9aa68;
+  color: #21170f;
+  font-weight: 700;
+}
+#noir-ambient-panel .noir-audio-btn:hover {
+  border-color: #d9aa68;
+}
+#noir-audio-foot {
+  margin: 13px 0 0;
+  color: #8e8171;
+  font-size: 11px;
+  text-align: center;
+}
+@media(max-width:480px) {
+  #noir-ambient-player { top: 10px; right: 10px; }
+  #noir-ambient-toggle { width: 42px; height: 42px; }
+  #noir-ambient-panel { position: fixed; top: 62px; right: 10px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  #noir-ambient-player * { transition: none !important; }
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const player = document.getElementById('noir-ambient-player');
+  if (player) {
+    document.body.classList.add('noir-central-mode');
+    document.body.appendChild(player);
+    const panel = document.getElementById('noir-ambient-panel');
+    if (panel) panel.classList.add('open');
+  }
+});
+</script>
+
+
+<!-- NOIR-CENTRAL-PREMIUM-V2 -->
+<style id="noir-central-premium-v2">
+  html, body {
+    min-height: 100%;
+    background: #17120f !important;
+  }
+
+  body.noir-central-mode {
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background:
+      radial-gradient(ellipse at 50% 35%, rgba(117, 78, 43, .22), transparent 48%),
+      radial-gradient(ellipse at 12% 90%, rgba(77, 48, 30, .19), transparent 42%),
+      linear-gradient(145deg, #211812 0%, #17120f 48%, #100e0c 100%) !important;
+    color: #f2e8d8;
+  }
+
+  body.noir-central-mode::before {
+    content: "NOIR CITY LAB";
+    position: fixed;
+    z-index: 0;
+    top: 34px;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 20px;
+    text-align: center;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: clamp(21px, 4vw, 31px);
+    font-weight: 400;
+    letter-spacing: .22em;
+    color: #e4c18b;
+    text-shadow: 0 2px 24px rgba(214, 166, 98, .15);
+    pointer-events: none;
+  }
+
+  body.noir-central-mode::after {
+    content: "AMBIENT COLLECTION  •  SOUND FOR THE CITY";
+    position: fixed;
+    z-index: 0;
+    top: 78px;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 14px;
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-size: 9px;
+    letter-spacing: .2em;
+    line-height: 1.8;
+    color: #aa9479;
+    pointer-events: none;
+  }
+
+  body.noir-central-mode #noir-ambient-player {
+    position: relative !important;
+    z-index: 2;
+    width: min(540px, calc(100% - 32px)) !important;
+    max-width: 540px !important;
+    margin: 145px auto 40px !important;
+    box-sizing: border-box;
+    border: 1px solid rgba(205, 164, 105, .34) !important;
+    border-radius: 18px !important;
+    background:
+      linear-gradient(145deg, rgba(54, 39, 29, .98), rgba(28, 22, 18, .98)) !important;
+    box-shadow:
+      0 28px 80px rgba(0, 0, 0, .38),
+      0 0 0 6px rgba(210, 173, 119, .025),
+      inset 0 1px 0 rgba(255, 235, 202, .06) !important;
+    color: #f2e8d8;
+    overflow: hidden;
+  }
+
+  body.noir-central-mode #noir-ambient-player::before {
+    content: "";
+    display: block;
+    height: 2px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent, #c9a36b, #f0d8aa, #c9a36b, transparent);
+    opacity: .9;
+  }
+
+  body.noir-central-mode #noir-ambient-panel {
+    background: transparent !important;
+    color: #f2e8d8 !important;
+  }
+
+  body.noir-central-mode #noir-ambient-player button {
+    transition: border-color .2s ease, background .2s ease, transform .2s ease;
+  }
+
+  body.noir-central-mode #noir-ambient-player button:active {
+    transform: scale(.98);
+  }
+
+  @media (max-width: 480px) {
+    body.noir-central-mode::before {
+      top: 28px;
+      font-size: 22px;
+      letter-spacing: .16em;
+    }
+
+    body.noir-central-mode::after {
+      top: 65px;
+      font-size: 8px;
+      letter-spacing: .12em;
+    }
+
+    body.noir-central-mode #noir-ambient-player {
+      margin-top: 120px !important;
+      width: calc(100% - 24px) !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body.noir-central-mode #noir-ambient-player button {
+      transition: none;
+    }
+  }
+
+
+/* NOIR-CENTRAL-LAYOUT-FIX */
+body.noir-central-mode #noir-ambient-player {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  inset: auto !important;
+  display: block !important;
+  width: min(540px, calc(100% - 28px)) !important;
+  max-width: 540px !important;
+  margin: 145px auto 40px !important;
+  z-index: 10 !important;
+  box-sizing: border-box !important;
+}
+
+body.noir-central-mode #noir-ambient-toggle {
+  display: none !important;
+}
+
+body.noir-central-mode #noir-ambient-panel {
+  position: relative !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  transform: none !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+@media (max-width: 480px) {
+  body.noir-central-mode #noir-ambient-player {
+    width: calc(100% - 24px) !important;
+    margin-top: 120px !important;
+  }
+
+  body.noir-central-mode #noir-ambient-panel {
+    padding: 16px !important;
+  }
+}
+/* END NOIR-CENTRAL-LAYOUT-FIX */
+</style>
+
+</head>
+
+<body>
+
+<div id="noir-ambient-player">
+  <button id="noir-ambient-toggle" type="button"
+    aria-label="Abrir música ambiente" aria-expanded="false"
+    title="Música ambiente">♫</button>
+  <section id="noir-ambient-panel" aria-label="Música ambiente Noir Lounge">
+    <p class="noir-audio-eyebrow">NOIR CITY LAB · AMBIENT</p>
+    <h2>Noir Lounge</h2>
+    <select id="noir-audio-track" aria-label="Escolher faixa">
+      <option value="0">01 · Midnight Lounge</option>
+      <option value="1">02 · Velvet Blues</option>
+      <option value="2">03 · Golden Hour</option>
+      <option value="3">04 · Rainy Café</option>
+      <option value="4">05 · Nocturne 16-Bit</option>
+    </select>
+    <div id="noir-audio-now" aria-live="polite">
+      <div id="noir-audio-title">Midnight Lounge</div>
+      <div id="noir-audio-style">Jazz lounge · 16-bit</div>
+    </div>
+    <label class="noir-audio-label" for="noir-audio-volume">
+      <span>Volume</span><span id="noir-audio-volume-value">35%</span>
+    </label>
+    <input id="noir-audio-volume" type="range"
+      min="0" max="100" value="35" aria-label="Volume da música">
+    <div class="noir-audio-actions">
+      <button class="noir-audio-btn primary" id="noir-audio-play" type="button">▶ Ouvir</button>
+      <button class="noir-audio-btn" id="noir-audio-mute" type="button">Silenciar</button>
+      <button class="noir-audio-btn" id="noir-audio-next" type="button">Próxima ↗</button>
+    </div>
+    <p id="noir-audio-foot">Instrumental · 2 minutos por faixa</p>
+  </section>
+</div>
+
+<header>
+  <div class="container brand">
+    <div class="logo">🌃</div>
+    <div>
+      <h1>NOIR CITY LAB</h1>
+      <p class="subtitle">Laboratório de ferramentas para criação</p>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <section class="intro">
+    <h2>Seu espaço de criação</h2>
+    <p>
+      Ferramentas para editar imagens, preparar sprites e desenvolver
+      novos recursos para o universo Noir City.
+    </p>
+  </section>
+
+  <h2 class="section-title">FERRAMENTAS DISPONÍVEIS</h2>
+
+  <section class="grid">
+
+    <a class="card" href="tests/background-removal-preview.html">
+      <span class="badge">✓ DISPONÍVEL</span>
+      <div class="icon">🖼️</div>
+      <h3>Removedor de Fundo</h3>
+      <p>
+        Remova o fundo preto das imagens, ajuste a tolerância
+        e preserve a transparência ao exportar.
+      </p>
+      <span class="button">Abrir ferramenta →</span>
+    </a>
+
+    <a class="card" href="tools/sprite-grid.html">
+      <span class="badge">✓ DISPONÍVEL</span>
+      <div class="icon">📐</div>
+      <h3>Grade de Sprites</h3>
+      <p>
+        Divida sprites em quadros, ajuste linhas, marque posições
+        personalizadas e exporte a imagem para o Photopea.
+      </p>
+      <span class="button">Abrir ferramenta →</span>
+    </a>
+
+    <div class="card future">
+      <span class="badge">EM BREVE</span>
+      <div class="icon">🎨</div>
+      <h3>Personalização de Cores</h3>
+      <p>
+        Espaço reservado para futuras ferramentas de alteração
+        de cores e personalização de imagens.
+      </p>
+      <span class="button">Ainda não disponível</span>
+    </div>
+
+    <div class="card future">
+      <span class="badge">EM BREVE</span>
+      <div class="icon">🧩</div>
+      <h3>Editor de Sprites</h3>
+      <p>
+        Espaço reservado para novos recursos de edição
+        e preparação de sprites.
+      </p>
+      <span class="button">Ainda não disponível</span>
+    </div>
+
+    <div class="card future">
+      <span class="badge">NOVAS FERRAMENTAS</span>
+      <div class="icon">🛠️</div>
+      <h3>Outras Ferramentas</h3>
+      <p>
+        O laboratório poderá receber quantas ferramentas
+        adicionais forem necessárias para o projeto.
+      </p>
+      <span class="button">Espaço reservado</span>
+    </div>
+
+  </section>
+</main>
+
+<footer>
+  <div class="container">
+    NOIR CITY LAB · Ferramentas independentes para criação.<br>
+    Cada ferramenta funciona separadamente e pode evoluir sem
+    modificar as demais.
+  </div>
+</footer>
+
+<script id="noir-ambient-engine">
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const names = [
+    ['Midnight Lounge','Jazz lounge · piano elétrico e baixo'],
+    ['Velvet Blues','Blues suave · notas quentes'],
+    ['Golden Hour','Jazz clássico · acordes dourados'],
+    ['Rainy Café','Piano contemplativo · café noturno'],
+    ['Nocturne 16-Bit','Clássica minimalista · retrô']
+  ];
+  const scales = [
+    [0,3,5,7,10,12,15,17],
+    [0,3,5,6,7,10,12,15],
+    [0,2,4,7,9,12,14,16],
+    [0,2,3,7,9,12,14,15],
+    [0,2,3,5,7,10,12,14]
+  ];
+  const chordSets = [
+    [[0,3,7],[5,8,12],[3,7,10],[0,4,7]],
+    [[0,3,7],[5,8,12],[0,3,7],[7,10,14]],
+    [[0,4,7],[9,12,16],[5,9,12],[7,11,14]],
+    [[0,3,7],[8,12,15],[5,8,12],[10,14,17]],
+    [[0,3,7],[5,8,12],[7,10,14],[0,3,7]]
+  ];
+  const tempos = [80,76,84,68,72];
+  let ctx = null, master = null, timer = null;
+  let track = 0, beat = 0, playing = false, muted = false;
+  let startedAt = 0, pausedElapsed = 0;
+  let lastBeatTime = 0;
+
+  const toggle = $('noir-ambient-toggle');
+  const panel = $('noir-ambient-panel');
+  const playButton = $('noir-audio-play');
+  const muteButton = $('noir-audio-mute');
+  const select = $('noir-audio-track');
+  const volume = $('noir-audio-volume');
+
+
+  const noirChannel = ('BroadcastChannel' in window)
+    ? new BroadcastChannel('noir-ambient-v1') : null;
+
+  function noirSendState() {
+    if (!noirChannel) return;
+    noirChannel.postMessage({
+      type: 'state',
+      track,
+      playing,
+      muted,
+      volume: Number(volume.value),
+      elapsed: pausedElapsed,
+      title: names[track][0],
+      style: names[track][1]
+    });
+  }
+
+  if (noirChannel) {
+    noirChannel.onmessage = async event => {
+      const msg = event.data || {};
+      if (msg.type !== 'command') return;
+
+      try {
+        if (msg.action === 'play') {
+          if (!playing) {
+            if (pausedElapsed >= 120) pausedElapsed = 0;
+            await startPlayback();
+          }
+        } else if (msg.action === 'pause') {
+          stopPlayback();
+          $('noir-audio-foot').textContent = 'Pausado';
+        } else if (msg.action === 'toggle') {
+          await togglePlayback();
+        } else if (msg.action === 'next') {
+          changeTrack(track + 1);
+        } else if (msg.action === 'track') {
+          changeTrack(Number(msg.value));
+        } else if (msg.action === 'mute') {
+          muted = Boolean(msg.value);
+          if (master && ctx) {
+            master.gain.setTargetAtTime(
+              muted ? 0 : Number(volume.value) / 100 * 0.75,
+              ctx.currentTime, 0.025
+            );
+          }
+          muteButton.textContent = muted ? 'Ativar som' : 'Silenciar';
+    noirSendState();
+        } else if (msg.action === 'volume') {
+          volume.value = String(Math.max(0, Math.min(100, Number(msg.value))));
+          $('noir-audio-volume-value').textContent = volume.value + '%';
+          if (master && ctx && !muted) {
+            master.gain.setTargetAtTime(
+              Number(volume.value) / 100 * 0.75,
+              ctx.currentTime, 0.025
+            );
+          }
+        }
+      } catch (err) {
+        console.error('Noir Ambient central:', err);
+      }
+
+      noirSendState();
+    };
+  }
+
+  function updateTrackInfo() {
+    $('noir-audio-title').textContent = names[track][0];
+    $('noir-audio-style').textContent = names[track][1];
+    select.value = String(track);
+  }
+  function openPanel(open) {
+    panel.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+  }
+  toggle.addEventListener('click', () => {
+    openPanel(!panel.classList.contains('open'));
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') openPanel(false);
+  });
+  document.addEventListener('pointerdown', e => {
+    if (!panel.contains(e.target) && !toggle.contains(e.target)) openPanel(false);
+  });
+
+  function initAudio() {
+    if (ctx) return;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) throw new Error('Este navegador não suporta áudio Web.');
+    ctx = new AudioContextClass();
+    master = ctx.createGain();
+    master.gain.value = muted ? 0 : Number(volume.value) / 100 * 0.75;
+    master.connect(ctx.destination);
+  }
+
+  function tone(freq, duration, wave, gain, when, endFreq) {
+    const osc = ctx.createOscillator();
+    const amp = ctx.createGain();
+    osc.type = wave;
+    osc.frequency.setValueAtTime(Math.max(30, freq), when);
+    if (endFreq) osc.frequency.exponentialRampToValueAtTime(Math.max(30,endFreq),when+duration);
+    amp.gain.setValueAtTime(0.0001, when);
+    amp.gain.linearRampToValueAtTime(gain, when + Math.min(0.035,duration/3));
+    amp.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+    osc.connect(amp);
+    amp.connect(master);
+    osc.start(when);
+    osc.stop(when + duration + 0.025);
+  }
+
+  function midi(n) { return 440 * Math.pow(2,(n-69)/12); }
+  function playBeat(index, when) {
+    const style = track;
+    const bar = Math.floor(index / 4);
+    const pos = index % 4;
+    const chords = chordSets[style][bar % chordSets[style].length];
+    const root = [48,46,50,45,48][style];
+    if (pos === 0 || (style === 1 && pos === 2)) {
+      chords.forEach((n,j) => {
+        tone(midi(root+n+12), 1.65, 'triangle', j===0 ? 0.035 : 0.018, when);
+      });
+      tone(midi(root-12), 0.62, 'triangle', 0.065, when, midi(root-15));
+    }
+    if (pos === 2 && style !== 3) {
+      tone(midi(root-5), 0.4, 'sine', 0.025, when);
+    }
+    const scale = scales[style];
+    const seed = (bar*7 + pos*3 + style*5) % scale.length;
+    const rest = ((bar*11 + pos*7 + style) % 13 === 0);
+    if (!rest) {
+      const octave = (bar % 4 === 3 && pos >= 2) ? 12 : 0;
+      const note = 60 + scale[seed] + octave;
+      const dur = style === 4 ? 0.48 : 0.32;
+      tone(midi(note), dur, style === 4 ? 'square' : 'triangle',
+        style === 4 ? 0.018 : 0.025, when);
+      if (pos === 0 && style === 2) {
+        tone(midi(note+12), 0.55, 'sine', 0.012, when+0.08);
+      }
+    }
+    if (style === 3 && pos === 0) {
+      tone(midi(36 + (bar%3)*5), 0.9, 'sine', 0.035, when);
+    }
+  }
+
+  function schedule() {
+    if (!playing || !ctx) return;
+    const beatLength = 60 / tempos[track];
+    const elapsed = ctx.currentTime - startedAt;
+    const targetBeat = Math.floor(elapsed / beatLength);
+    while (beat <= targetBeat && beat < Math.ceil(120 / beatLength)) {
+      const when = startedAt + beat * beatLength;
+      if (when >= ctx.currentTime - 0.06) playBeat(beat, Math.max(when,ctx.currentTime+0.015));
+      beat++;
+    }
+    const total = 120;
+    if (elapsed >= total) {
+      stopPlayback();
+      $('noir-audio-foot').textContent = 'Faixa concluída · escolha outra ou reproduza novamente';
+    }
+  }
+
+  async function startPlayback() {
+    try {
+      initAudio();
+      await ctx.resume();
+      if (playing) return;
+      playing = true;
+      startedAt = ctx.currentTime - pausedElapsed;
+      lastBeatTime = startedAt;
+      timer = window.setInterval(schedule, 80);
+      playButton.textContent = 'Ⅱ Pausar';
+      noirSendState();
+      $('noir-audio-foot').textContent = 'Tocando · a música permanece neste Lab';
+      schedule();
+    } catch (err) {
+      $('noir-audio-foot').textContent = 'Não foi possível iniciar o áudio neste navegador.';
+      console.error('Noir Ambient:', err);
+    }
+  }
+
+  function stopPlayback() {
+    if (timer !== null) window.clearInterval(timer);
+    timer = null;
+    if (playing && ctx) pausedElapsed = Math.min(120,ctx.currentTime-startedAt);
+    playing = false;
+    playButton.textContent = '▶ Ouvir';
+    noirSendState();
+  }
+
+  async function togglePlayback() {
+    if (playing) {
+      stopPlayback();
+      $('noir-audio-foot').textContent = 'Pausado';
+    } else {
+      if (pausedElapsed >= 120) pausedElapsed = 0;
+      await startPlayback();
+    }
+  }
+
+  function changeTrack(next) {
+    const wasPlaying = playing;
+    stopPlayback();
+    track = (next + names.length) % names.length;
+    beat = 0;
+    pausedElapsed = 0;
+    updateTrackInfo();
+    $('noir-audio-foot').textContent = 'Faixa selecionada · 2 minutos';
+    if (wasPlaying) startPlayback();
+  }
+
+  playButton.addEventListener('click', togglePlayback);
+  muteButton.addEventListener('click', () => {
+    muted = !muted;
+    if (master && ctx) {
+      master.gain.setTargetAtTime(muted ? 0 : Number(volume.value)/100*0.75,ctx.currentTime,0.025);
+    }
+    muteButton.textContent = muted ? 'Ativar som' : 'Silenciar';
+    noirSendState();
+  });
+  volume.addEventListener('input', () => {
+    $('noir-audio-volume-value').textContent = volume.value + '%';
+    if (master && ctx && !muted) {
+      master.gain.setTargetAtTime(Number(volume.value)/100*0.75,ctx.currentTime,0.025);
+    }
+    noirSendState();
+  });
+  select.addEventListener('change', () => changeTrack(Number(select.value)));
+  $('noir-audio-next').addEventListener('click', () => changeTrack(track+1));
+  updateTrackInfo();
+
+  // Não iniciar áudio automaticamente: exige interação explícita do usuário.
+})();
+</script>
+
+</body>
+</html>

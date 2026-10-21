@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Noir City Lab — Teste de Fundo</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 16px;
+  background: #21170f;
+  color: #f2eadb;
+  font-family: system-ui, sans-serif;
+}
+
+h1 {
+  font-size: 22px;
+}
+
+.controls {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  background: #29232a;
+  border-radius: 10px;
+}
+
+input, button {
+  font: inherit;
+}
+
+button {
+  padding: 10px;
+  border: 0;
+  border-radius: 7px;
+  background: #d9aa68;
+  color: #21170f;
+  font-weight: bold;
+}
+
+input[type="file"] {
+  width: 100%;
+}
+
+input[type="range"] {
+  width: 100%;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.panel {
+  min-width: 0;
+  padding: 10px;
+  background: #29232a;
+  border-radius: 10px;
+}
+
+.panel h2 {
+  font-size: 16px;
+}
+
+.preview {
+  overflow: auto;
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #bbb 25%, transparent 25%),
+    linear-gradient(-45deg, #bbb 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #bbb 75%),
+    linear-gradient(-45deg, transparent 75%, #bbb 75%);
+  background-size: 20px 20px;
+  background-position:
+    0 0, 0 10px, 10px -10px, -10px 0;
+}
+
+canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.stats {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.note {
+  color: #b2a28b;
+  font-size: 13px;
+}
+</style>
+
+<style id="noir-luxury-theme">
+:root {
+  --bg: #21170f;
+  --panel: #201e23;
+  --panel-raised: #29232a;
+  --border: #494047;
+  --gold: #d9aa68;
+  --text: #f2eadb;
+  --muted: #b2a28b;
+  color-scheme: dark;
+}
+
+html {
+  background: #21170f;
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 50% 0%,
+      rgba(217,170,104,.07), transparent 52%),
+    #21170f !important;
+  color: #f2eadb !important;
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+h1, h2, h3 {
+  color: #f2eadb;
+  letter-spacing: -.025em;
+}
+
+h1 {
+  font-weight: 650;
+}
+
+h1, h2 {
+  text-wrap: balance;
+}
+
+p, label, small {
+  color: inherit;
+}
+
+a {
+  color: #d9aa68;
+  text-decoration-color: rgba(217,170,104,.4);
+  text-underline-offset: 4px;
+}
+
+a:hover {
+  color: #f2d5a5;
+}
+
+button, .button, a.button {
+  border-radius: 9px;
+  transition: background-color .18s ease,
+              border-color .18s ease,
+              transform .18s ease;
+}
+
+button {
+  border-color: #494047;
+}
+
+button:hover {
+  border-color: #d9aa68;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #d9aa68;
+  outline-offset: 3px;
+}
+
+input, select, textarea {
+  color: #f2eadb;
+  background-color: #201e23;
+  border-color: #494047;
+  border-radius: 8px;
+  accent-color: #d9aa68;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid #494047;
+}
+
+.tool-card, .card, .panel, .tool, .feature-card {
+  background-color: #201e23;
+  border: 1px solid #494047;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+}
+
+.tool-card:hover, .card:hover, .feature-card:hover {
+  border-color: rgba(217,170,104,.55);
+}
+
+header {
+  border-color: #494047;
+}
+
+::selection {
+  color: #21170f;
+  background: #d9aa68;
+}
+
+@media (max-width: 600px) {
+  body {
+    line-height: 1.55;
+  }
+
+  button, input, select {
+    min-height: 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+
+/* NOIR BACKGROUND PREMIUM START */
+body {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(16px, 4vw, 40px);
+  line-height: 1.65;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(217,170,104,.09), transparent 48%),
+    #21170f !important;
+  color: #f2eadb;
+}
+
+header {
+  margin-bottom: 28px;
+  padding: 25px;
+  border: 1px solid rgba(217,170,104,.25);
+  border-radius: 15px;
+  background: linear-gradient(135deg, #29232a, #201e23);
+  box-shadow: 0 12px 32px rgba(0,0,0,.18);
+}
+
+h1, h2 {
+  color: #f2eadb;
+  line-height: 1.3;
+}
+
+h1 {
+  letter-spacing: .035em;
+}
+
+h2 {
+  font-size: 1.08rem;
+  letter-spacing: .02em;
+}
+
+p, label, small {
+  color: #b2a28b;
+}
+
+button {
+  min-height: 43px;
+  padding: 11px 17px;
+  border: 1px solid rgba(217,170,104,.5);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #e5bd80, #d9aa68);
+  color: #21170f;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter .18s ease, box-shadow .18s ease;
+}
+
+button:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 5px 18px rgba(217,170,104,.15);
+}
+
+button:focus-visible, input:focus-visible {
+  outline: 2px solid #d9aa68;
+  outline-offset: 3px;
+}
+
+input[type="file"] {
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 12px;
+  border: 1px dashed rgba(217,170,104,.45);
+  border-radius: 9px;
+  background: #201e23;
+  color: #f2eadb;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: #d9aa68;
+}
+
+canvas {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid rgba(217,170,104,.3);
+  border-radius: 9px;
+}
+
+#stats {
+  padding: 15px 17px;
+  border: 1px solid #494047;
+  border-left: 3px solid #d9aa68;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #29232a, #201e23);
+  color: #f2eadb;
+  overflow-wrap: anywhere;
+}
+
+#toleranceValue {
+  color: #d9aa68;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 14px;
+  }
+
+  header {
+    padding: 20px 17px;
+  }
+
+  button {
+    max-width: 100%;
+  }
+
+  canvas {
+    width: 100%;
+  }
+}
+/* NOIR BACKGROUND PREMIUM END */
+
+</style>
+
+</head>
+
+<body>
+
+<h1>Noir City Lab</h1>
+<p>Teste independente de remoção de fundo.</p>
+
+<div class="controls">
+  <label>
+    <strong>1. Escolha a imagem Base Noir</strong>
+    <input id="file" type="file" accept="image/png,image/webp,image/jpeg">
+  </label>
+
+  <label>
+    <strong>2. Tolerância: <span id="toleranceValue">18</span></strong>
+    <input id="tolerance" type="range" min="0" max="80" value="18">
+  </label>
+
+  <button id="process">Processar imagem</button>
+  <button id="restore">Restaurar original</button>
+
+  <p class="note">
+    O fundo removido é identificado pela cor preta conectada
+    às bordas. A imagem original não é modificada.
+  </p>
+</div>
+
+<div class="grid">
+  <section class="panel">
+    <h2>Imagem original</h2>
+    <div class="preview">
+      <canvas id="original"></canvas>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Resultado com transparência</h2>
+    <div class="preview">
+      <canvas id="result"></canvas>
+    </div>
+  </section>
+</div>
+
+<section class="panel" style="margin-top:16px">
+  <h2>Relatório</h2>
+  <div id="stats" class="stats">Carregue uma imagem para começar.</div>
+</section>
+
+<script type="module">
+import { BackgroundRemoval } from "../engine/BackgroundRemoval.js";
+
+const fileInput = document.getElementById("file");
+const toleranceInput = document.getElementById("tolerance");
+const toleranceValue = document.getElementById("toleranceValue");
+const originalCanvas = document.getElementById("original");
+const resultCanvas = document.getElementById("result");
+const stats = document.getElementById("stats");
+
+const originalContext = originalCanvas.getContext("2d", {
+  willReadFrequently: true
+});
+
+const resultContext = resultCanvas.getContext("2d");
+
+let originalImageData = null;
+
+function showStats(text) {
+  stats.textContent = text;
+}
+
+function renderOriginal() {
+  if (!originalImageData) return;
+
+  originalCanvas.width = originalImageData.width;
+  originalCanvas.height = originalImageData.height;
+
+  originalContext.putImageData(originalImageData, 0, 0);
+}
+
+function renderResult(imageData) {
+  resultCanvas.width = imageData.width;
+  resultCanvas.height = imageData.height;
+
+  resultContext.putImageData(imageData, 0, 0);
+}
+
+function processImage() {
+  if (!originalImageData) {
+    showStats("Escolha uma imagem primeiro.");
+    return;
+  }
+
+  try {
+    const result = BackgroundRemoval.remove(
+      originalImageData,
+      {
+        color: "#000000",
+        tolerance: Number(toleranceInput.value),
+        eightConnected: false
+      }
+    );
+
+    renderResult(result.imageData);
+
+    const removedPercent = (
+      result.stats.removedPixels /
+      result.stats.totalPixels * 100
+    ).toFixed(2);
+
+    showStats(
+      `Dimensões: ${result.stats.width} × ${result.stats.height}\n` +
+      `Pixels totais: ${result.stats.totalPixels}\n` +
+      `Pixels removidos: ${result.stats.removedPixels}\n` +
+      `Pixels preservados: ${result.stats.remainingPixels}\n` +
+      `Fundo removido: ${removedPercent}%\n` +
+      `Tolerância: ${result.stats.tolerance}`
+    );
+  } catch (error) {
+    showStats("Erro ao processar: " + error.message);
+  }
+}
+
+fileInput.addEventListener("change", () => {
+  const file = fileInput.files[0];
+
+  if (!file) return;
+
+  const image = new Image();
+  const objectUrl = URL.createObjectURL(file);
+
+  image.onload = () => {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+
+      const context = canvas.getContext("2d", {
+        willReadFrequently: true
+      });
+
+      context.drawImage(image, 0, 0);
+
+      originalImageData = context.getImageData(
+        0, 0, canvas.width, canvas.height
+      );
+
+      renderOriginal();
+      processImage();
+
+      showStats(
+        `Imagem carregada: ${file.name}\n` +
+        `Dimensões: ${image.naturalWidth} × ${image.naturalHeight}\n` +
+        "Ajuste a tolerância e observe os contornos."
+      );
+    } catch (error) {
+      showStats("Não foi possível ler a imagem: " + error.message);
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  };
+
+  image.onerror = () => {
+    URL.revokeObjectURL(objectUrl);
+    showStats("Não foi possível abrir essa imagem.");
+  };
+
+  image.src = objectUrl;
+});
+
+toleranceInput.addEventListener("input", () => {
+  toleranceValue.textContent = toleranceInput.value;
+});
+
+toleranceInput.addEventListener("change", processImage);
+
+document.getElementById("process").addEventListener(
+  "click", processImage
+);
+
+document.getElementById("restore").addEventListener("click", () => {
+  if (!originalImageData) return;
+
+  renderResult(originalImageData);
+
+  showStats(
+    "Imagem original restaurada na visualização. " +
+    "Nenhum arquivo foi alterado."
+  );
+});
+</script>
+
+</body>
+</html>

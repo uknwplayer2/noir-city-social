@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Noir City Lab — Grade de Sprites</title>
+
+<style>
+* { box-sizing: border-box; }
+
+:root {
+  color-scheme: dark;
+  --bg: #21170f;
+  --panel: #29232a;
+  --border: #494047;
+  --gold: #d9aa68;
+  --text: #f2eadb;
+  --muted: #b2a28b;
+}
+
+body {
+  margin: 0;
+  padding: 16px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+}
+
+header {
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+h1 { font-size: 23px; margin: 0 0 5px; }
+h2 { font-size: 17px; margin: 0 0 12px; }
+p { line-height: 1.5; }
+
+.muted { color: var(--muted); font-size: 13px; }
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+  min-width: 0;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field.full { grid-column: 1 / -1; }
+
+label { font-size: 13px; color: var(--muted); }
+
+input, select, button {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+  border-radius: 7px;
+}
+
+input, select {
+  padding: 10px;
+  color: var(--text);
+  background: #21170f;
+  border: 1px solid #494047;
+}
+
+input[type="checkbox"] { width: auto; }
+
+button {
+  padding: 11px;
+  border: 0;
+  background: var(--gold);
+  color: #21170f;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #383838;
+  color: var(--text);
+  border: 1px solid #494047;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.checkline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.preview {
+  overflow: auto;
+  max-height: 65vh;
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg,#bbb 25%,transparent 25%),
+    linear-gradient(-45deg,#bbb 25%,transparent 25%),
+    linear-gradient(45deg,transparent 75%,#bbb 75%),
+    linear-gradient(-45deg,transparent 75%,#bbb 75%);
+  background-size: 20px 20px;
+  background-position: 0 0,0 10px,10px -10px,-10px 0;
+  border-radius: 8px;
+  touch-action: pan-x pan-y;
+}
+
+canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+}
+
+#status {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.badge {
+  display: inline-block;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 9px;
+  color: var(--gold);
+  font-size: 12px;
+}
+
+@media (max-width: 380px) {
+  body { padding: 10px; }
+  .panel { padding: 11px; }
+  .controls { gap: 9px; }
+}
+</style>
+
+<style id="noir-luxury-theme">
+:root {
+  --bg: #21170f;
+  --panel: #201e23;
+  --panel-raised: #29232a;
+  --border: #494047;
+  --gold: #d9aa68;
+  --text: #f2eadb;
+  --muted: #b2a28b;
+  color-scheme: dark;
+}
+
+html {
+  background: #21170f;
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 50% 0%,
+      rgba(217,170,104,.07), transparent 52%),
+    #21170f !important;
+  color: #f2eadb !important;
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+h1, h2, h3 {
+  color: #f2eadb;
+  letter-spacing: -.025em;
+}
+
+h1 {
+  font-weight: 650;
+}
+
+h1, h2 {
+  text-wrap: balance;
+}
+
+p, label, small {
+  color: inherit;
+}
+
+a {
+  color: #d9aa68;
+  text-decoration-color: rgba(217,170,104,.4);
+  text-underline-offset: 4px;
+}
+
+a:hover {
+  color: #f2d5a5;
+}
+
+button, .button, a.button {
+  border-radius: 9px;
+  transition: background-color .18s ease,
+              border-color .18s ease,
+              transform .18s ease;
+}
+
+button {
+  border-color: #494047;
+}
+
+button:hover {
+  border-color: #d9aa68;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #d9aa68;
+  outline-offset: 3px;
+}
+
+input, select, textarea {
+  color: #f2eadb;
+  background-color: #201e23;
+  border-color: #494047;
+  border-radius: 8px;
+  accent-color: #d9aa68;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid #494047;
+}
+
+.tool-card, .card, .panel, .tool, .feature-card {
+  background-color: #201e23;
+  border: 1px solid #494047;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+}
+
+.tool-card:hover, .card:hover, .feature-card:hover {
+  border-color: rgba(217,170,104,.55);
+}
+
+header {
+  border-color: #494047;
+}
+
+::selection {
+  color: #21170f;
+  background: #d9aa68;
+}
+
+@media (max-width: 600px) {
+  body {
+    line-height: 1.55;
+  }
+
+  button, input, select {
+    min-height: 42px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+
+/* NOIR SPRITE PREMIUM START */
+
+body {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: clamp(16px, 3.5vw, 38px);
+  line-height: 1.6;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(217,170,104,.08), transparent 48%),
+    #21170f !important;
+}
+
+header {
+  margin-bottom: 28px;
+  padding: 24px;
+  border: 1px solid rgba(217,170,104,.25);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #29232a, #201e23);
+  box-shadow: 0 14px 38px rgba(0,0,0,.18);
+}
+
+h1 {
+  color: #f2eadb;
+  letter-spacing: .025em;
+  line-height: 1.25;
+}
+
+h2 {
+  margin-top: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(217,170,104,.2);
+  color: #f2eadb;
+  font-size: 1.08rem;
+  letter-spacing: .015em;
+}
+
+label {
+  color: #b2a28b;
+  font-weight: 500;
+}
+
+input:not([type="checkbox"]):not([type="file"]):not([type="range"]),
+select {
+  min-height: 42px;
+  border: 1px solid #494047;
+  border-radius: 8px;
+  background-color: #201e23;
+  color: #f2eadb;
+}
+
+input[type="file"] {
+  max-width: 100%;
+  padding: 12px;
+  border: 1px dashed rgba(217,170,104,.42);
+  border-radius: 9px;
+  background: rgba(32,30,35,.7);
+  color: #f2eadb;
+}
+
+input[type="checkbox"],
+input[type="range"] {
+  accent-color: #d9aa68;
+}
+
+button {
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid rgba(217,170,104,.45);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #e5bd80, #d9aa68);
+  color: #21170f;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter .18s ease, box-shadow .18s ease;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.07);
+  box-shadow: 0 5px 18px rgba(217,170,104,.13);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: .48;
+  filter: saturate(.5);
+}
+
+button.secondary {
+  border: 1px solid #494047;
+  background: #29232a;
+  color: #f2eadb;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #d9aa68;
+  outline-offset: 3px;
+}
+
+canvas {
+  max-width: 100%;
+  border: 1px solid rgba(217,170,104,.3);
+  border-radius: 10px;
+}
+
+#status {
+  margin-top: 16px;
+  padding: 13px 16px;
+  border: 1px solid #494047;
+  border-left: 3px solid #d9aa68;
+  border-radius: 9px;
+  background: #201e23;
+  color: #f2eadb;
+  overflow-wrap: anywhere;
+}
+
+#lineList {
+  min-height: 110px;
+}
+
+.muted {
+  color: #b2a28b;
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 14px;
+  }
+
+  header {
+    padding: 19px 16px;
+  }
+
+  button {
+    max-width: 100%;
+  }
+
+  canvas {
+    height: auto;
+  }
+}
+
+/* NOIR SPRITE PREMIUM END */
+
+</style>
+
+
+<style id="noir-grid-floating-style">
+#noir-grid-toolbar {
+  position: sticky;
+  top: 8px;
+  z-index: 20;
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 12px;
+  pointer-events: none;
+}
+#noir-grid-toggle {
+  width: auto;
+  max-width: 100%;
+  pointer-events: auto;
+  border: 1px solid #d9aa68;
+  box-shadow: 0 5px 20px #0006;
+}
+#noir-grid-float-panel {
+  position: fixed;
+  z-index: 100;
+  top: 72px;
+  right: 10px;
+  width: min(340px, calc(100vw - 20px));
+  max-height: min(72vh, 620px);
+  overflow: auto;
+  padding: 14px;
+  border: 1px solid #8d704e;
+  border-radius: 14px;
+  background: #201e23;
+  color: #f2eadb;
+  box-shadow: 0 14px 42px #0009;
+}
+#noir-grid-float-panel[hidden] { display: none !important; }
+#noir-grid-float-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #d9aa68;
+}
+#noir-grid-close {
+  width: 40px;
+  min-width: 40px;
+  padding: 5px;
+  font-size: 20px;
+}
+#noir-grid-float-content .panel {
+  margin: 10px 0 0;
+  padding: 10px;
+}
+#noir-grid-float-content .panel > h2 { font-size: 15px; }
+#noir-grid-float-content .actions { gap: 7px; }
+#noir-grid-float-content button { font-size: 13px; }
+input[type="range"] {
+  width: 100%;
+  padding: 0;
+  accent-color: #d9aa68;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+@media (max-width: 480px) {
+  #noir-grid-float-panel {
+    top: 64px;
+    right: 8px;
+    width: calc(100vw - 16px);
+    max-height: 68vh;
+  }
+}
+</style>
+
+</head>
+
+<body>
+
+<div id="noir-grid-toolbar">
+  <button id="noir-grid-toggle" type="button"
+    aria-expanded="false" aria-controls="noir-grid-float-panel">
+    ⚙ Ajustes da grade
+  </button>
+</div>
+<aside id="noir-grid-float-panel" aria-label="Painel flutuante da grade" hidden>
+  <div id="noir-grid-float-header">
+    <strong>NOIR · AJUSTES</strong>
+    <button id="noir-grid-close" class="secondary" type="button"
+      aria-label="Fechar painel">×</button>
+  </div>
+  <p class="muted">Ajuste os valores pelos controles deslizantes ou pelos campos numéricos.</p>
+  <div id="noir-grid-float-content"><section class="panel">
+  <h2>2. Configuração da grade</h2>
+
+  <div class="controls">
+    <div class="field">
+      <label for="columns">Colunas</label>
+      <input id="columns" type="number" min="1" max="200" value="4">
+      <input id="slider-columns" type="range" min="1" max="40" step="1" value="4" aria-label="Ajustar columns">
+    </div>
+
+    <div class="field">
+      <label for="rows">Linhas</label>
+      <input id="rows" type="number" min="1" max="200" value="1">
+      <input id="slider-rows" type="range" min="1" max="40" step="1" value="1" aria-label="Ajustar rows">
+    </div>
+
+    <div class="field">
+      <label for="offsetX">Deslocamento X (px)</label>
+      <input id="offsetX" type="number" min="0" value="0">
+      <input id="slider-offsetX" type="range" min="0" max="2048" step="1" value="0" aria-label="Ajustar offsetX">
+    </div>
+
+    <div class="field">
+      <label for="offsetY">Deslocamento Y (px)</label>
+      <input id="offsetY" type="number" min="0" value="0">
+      <input id="slider-offsetY" type="range" min="0" max="2048" step="1" value="0" aria-label="Ajustar offsetY">
+    </div>
+
+    <div class="field">
+      <label for="cellW">Largura da célula (px)</label>
+      <input id="cellW" type="number" min="1" value="0">
+      <input id="slider-cellW" type="range" min="0" max="8192" step="1" value="0" aria-label="Ajustar cellW">
+    </div>
+
+    <div class="field">
+      <label for="cellH">Altura da célula (px)</label>
+      <input id="cellH" type="number" min="1" value="0">
+      <input id="slider-cellH" type="range" min="0" max="8192" step="1" value="0" aria-label="Ajustar cellH">
+    </div>
+
+    <div class="field">
+      <label for="lineWidth">Espessura das linhas</label>
+      <select id="lineWidth">
+        <option value="1">1 px</option>
+        <option value="2" selected>2 px</option>
+        <option value="3">3 px</option>
+        <option value="4">4 px</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="lineColor">Cor das linhas</label>
+      <select id="lineColor">
+        <option value="#ff3030">Vermelho</option>
+        <option value="#00e5ff">Ciano</option>
+        <option value="#ffff00">Amarelo</option>
+        <option value="#00ff66">Verde</option>
+        <option value="#ffffff">Branco</option>
+        <option value="#000000">Preto</option>
+      </select>
+    </div>
+
+    <div class="field full">
+      <label class="checkline">
+        <input id="showNumbers" type="checkbox" checked>
+        Mostrar número de cada quadro
+      </label>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="regularGrid">Grade uniforme</button>
+    <button id="redraw" class="secondary">Atualizar prévia</button>
+  </div>
+
+  <p class="muted">
+    A grade uniforme divide a imagem em partes iguais.
+    Para controlar cada separação, use a lista de posições abaixo.
+  </p>
+</section>
+
+<section class="panel">
+  <h2>3. Ajustar divisões individualmente</h2>
+
+  <div class="controls">
+    <div class="field">
+      <label for="axis">Orientação</label>
+      <select id="axis">
+        <option value="x">Vertical — eixo X</option>
+        <option value="y">Horizontal — eixo Y</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="position">Posição (px)</label>
+      <input id="position" type="number" min="0" value="100">
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="addLine">Adicionar divisão</button>
+    <button id="clearLines" class="secondary">Limpar divisões extras</button>
+  </div>
+
+  <div class="field" style="margin-top:14px">
+    <label for="lineList">Divisões personalizadas</label>
+    <select id="lineList" size="5">
+      <option value="">Nenhuma divisão extra</option>
+    </select>
+  </div>
+
+  <div class="actions">
+    <button id="removeLine" class="secondary">Remover selecionada</button>
+    <button id="export" disabled>Salvar PNG no dispositivo</button>
+  </div>
+
+  <p class="muted">
+    As divisões extras são adicionadas às linhas da grade.
+    A posição é medida a partir da borda esquerda ou superior.
+  </p>
+</section>
+
+</div>
+</aside>
+
+<header>
+  <div class="badge">NOIR CITY LAB</div>
+  <h1>🧩 Grade de Sprites</h1>
+  <p class="muted">
+    Marque as divisões de uma spritesheet e exporte uma cópia
+    para corrigir no Photopea.
+  </p>
+</header>
+
+<section class="panel">
+  <h2>1. Imagem</h2>
+  <div class="field">
+    <label for="file">Escolha uma spritesheet</label>
+    <input id="file" type="file"
+      accept="image/png,image/webp,image/jpeg">
+  </div>
+  <p class="muted">
+    A imagem original nunca é modificada. As linhas serão
+    aplicadas somente à cópia exportada.
+  </p>
+</section>
+
+<section class="panel">
+  <h2>4. Prévia</h2>
+  <div class="preview">
+    <canvas id="canvas"></canvas>
+  </div>
+  <p id="status">Escolha uma imagem para começar.</p>
+</section>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const canvas = $("canvas");
+const ctx = canvas.getContext("2d");
+const sourceCanvas = document.createElement("canvas");
+const sourceCtx = sourceCanvas.getContext("2d");
+
+let loadedImage = false;
+let fileName = "spritesheet";
+let extraLines = [];
+let nextLineId = 1;
+
+function numberValue(id, fallback = 0) {
+  const value = Number($(id).value);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function safeInteger(id, min, max, fallback) {
+  return Math.max(min, Math.min(max,
+    Math.floor(numberValue(id, fallback))));
+}
+
+function getSettings() {
+  const width = sourceCanvas.width;
+  const height = sourceCanvas.height;
+
+  return {
+    width,
+    height,
+    columns: safeInteger("columns", 1, 200, 1),
+    rows: safeInteger("rows", 1, 200, 1),
+    offsetX: safeInteger("offsetX", 0, width, 0),
+    offsetY: safeInteger("offsetY", 0, height, 0),
+    cellW: Math.max(1, numberValue("cellW", 1)),
+    cellH: Math.max(1, numberValue("cellH", 1)),
+    lineWidth: safeInteger("lineWidth", 1, 4, 2),
+    lineColor: $("lineColor").value
+  };
+}
+
+function updateStatus(message) {
+  $("status").textContent = message;
+}
+
+function drawGrid(target, settings) {
+  const { width, height, columns, rows,
+    offsetX, offsetY, lineWidth, lineColor } = settings;
+
+  target.clearRect(0, 0, width, height);
+  target.drawImage(sourceCanvas, 0, 0);
+
+  if (!loadedImage) return;
+
+  target.save();
+  target.lineWidth = lineWidth;
+  target.strokeStyle = lineColor;
+  target.fillStyle = lineColor;
+  target.font = "bold 12px sans-serif";
+  target.textBaseline = "top";
+
+  const vertical = new Set();
+  const horizontal = new Set();
+
+  for (let i = 1; i < columns; i++) {
+    const x = Math.round(offsetX +
+      (width - offsetX) * i / columns);
+    if (x > 0 && x < width) vertical.add(x);
+  }
+
+  for (let i = 1; i < rows; i++) {
+    const y = Math.round(offsetY +
+      (height - offsetY) * i / rows);
+    if (y > 0 && y < height) horizontal.add(y);
+  }
+
+  for (const line of extraLines) {
+    if (line.axis === "x" && line.position > 0 &&
+        line.position < width) vertical.add(line.position);
+    if (line.axis === "y" && line.position > 0 &&
+        line.position < height) horizontal.add(line.position);
+  }
+
+  target.beginPath();
+
+  for (const x of vertical) {
+    target.moveTo(x + 0.5, 0);
+    target.lineTo(x + 0.5, height);
+  }
+
+  for (const y of horizontal) {
+    target.moveTo(0, y + 0.5);
+    target.lineTo(width, y + 0.5);
+  }
+
+  target.stroke();
+
+  if ($("showNumbers").checked) {
+    let index = 1;
+    const sortedX = [...vertical].sort((a, b) => a - b);
+    const sortedY = [...horizontal].sort((a, b) => a - b);
+
+    const boundsX = [0, ...sortedX, width];
+    const boundsY = [0, ...sortedY, height];
+
+    target.fillStyle = lineColor;
+
+    for (let r = 0; r < boundsY.length - 1; r++) {
+      for (let c = 0; c < boundsX.length - 1; c++) {
+        const x = boundsX[c] + 3;
+        const y = boundsY[r] + 3;
+        target.fillText(String(index++), x, y);
+      }
+    }
+  }
+
+  target.restore();
+}
+
+function render() {
+  if (!loadedImage) return;
+
+  const settings = getSettings();
+  drawGrid(ctx, settings);
+
+  updateStatus(
+    `Imagem: ${fileName}\n` +
+    `Dimensões: ${settings.width} × ${settings.height} px\n` +
+    `Tamanho aproximado: ${settings.cellW} × ${settings.cellH} px por célula\n` +
+    `Colunas configuradas: ${settings.columns}\n` +
+    `Linhas configuradas: ${settings.rows}\n` +
+    `Divisões extras: ${extraLines.length}\n` +
+    "A prévia mostra as linhas que serão exportadas."
+  );
+}
+
+function updateLineList() {
+  const list = $("lineList");
+  list.replaceChildren();
+
+  if (extraLines.length === 0) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "Nenhuma divisão extra";
+    list.appendChild(option);
+    return;
+  }
+
+  for (const line of extraLines) {
+    const option = document.createElement("option");
+    option.value = String(line.id);
+    option.textContent =
+      `${line.axis === "x" ? "Vertical X" : "Horizontal Y"}: ${line.position} px`;
+    list.appendChild(option);
+  }
+}
+
+$("file").addEventListener("change", () => {
+  const file = $("file").files[0];
+  if (!file) return;
+
+  const url = URL.createObjectURL(file);
+  const image = new Image();
+
+  image.onload = () => {
+    try {
+      sourceCanvas.width = image.naturalWidth;
+      sourceCanvas.height = image.naturalHeight;
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+
+      sourceCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
+      sourceCtx.drawImage(image, 0, 0);
+
+      loadedImage = true;
+      fileName = file.name.replace(/\.[^.]+$/, "") || "spritesheet";
+      extraLines = [];
+      nextLineId = 1;
+
+      $("offsetX").value = 0;
+      $("offsetY").value = 0;
+      $("columns").value = 4;
+      $("rows").value = 1;
+      $("cellW").value = Math.round(image.naturalWidth / 4);
+      $("cellH").value = image.naturalHeight;
+
+      $("export").disabled = false;
+      updateLineList();
+      render();
+    } catch (error) {
+      updateStatus("Erro ao carregar imagem: " + error.message);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  image.onerror = () => {
+    URL.revokeObjectURL(url);
+    updateStatus("Não foi possível abrir essa imagem.");
+  };
+
+  image.src = url;
+});
+
+$("regularGrid").addEventListener("click", () => {
+  if (!loadedImage) {
+    updateStatus("Escolha uma imagem primeiro.");
+    return;
+  }
+
+  const settings = getSettings();
+  $("cellW").value = Math.round(
+    (settings.width - settings.offsetX) / settings.columns);
+  $("cellH").value = Math.round(
+    (settings.height - settings.offsetY) / settings.rows);
+
+  render();
+});
+
+$("redraw").addEventListener("click", render);
+
+for (const id of [
+  "columns", "rows", "offsetX", "offsetY",
+  "cellW", "cellH", "lineWidth", "lineColor", "showNumbers"
+]) {
+  $(id).addEventListener("input", render);
+  $(id).addEventListener("change", render);
+}
+
+$("addLine").addEventListener("click", () => {
+  if (!loadedImage) {
+    updateStatus("Escolha uma imagem primeiro.");
+    return;
+  }
+
+  const axis = $("axis").value;
+  const position = Math.floor(numberValue("position", 0));
+  const limit = axis === "x" ? canvas.width : canvas.height;
+
+  if (position <= 0 || position >= limit) {
+    updateStatus(
+      `A posição deve estar entre 1 e ${limit - 1} px.`
+    );
+    return;
+  }
+
+  extraLines.push({ id: nextLineId++, axis, position });
+  updateLineList();
+  render();
+});
+
+$("removeLine").addEventListener("click", () => {
+  const id = Number($("lineList").value);
+  if (!id) return;
+
+  extraLines = extraLines.filter(line => line.id !== id);
+  updateLineList();
+  render();
+});
+
+$("clearLines").addEventListener("click", () => {
+  extraLines = [];
+  updateLineList();
+  render();
+});
+
+$("export").addEventListener("click", () => {
+  if (!loadedImage) return;
+
+  try {
+    render();
+
+    const output = document.createElement("canvas");
+    output.width = sourceCanvas.width;
+    output.height = sourceCanvas.height;
+
+    const outputCtx = output.getContext("2d");
+    drawGrid(outputCtx, getSettings());
+
+    output.toBlob(blob => {
+      if (!blob) {
+        updateStatus("Não foi possível criar o PNG.");
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${fileName}-grade.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+      updateStatus(
+        `PNG exportado: ${fileName}-grade.png\n` +
+        "Se o navegador perguntar, confirme o download."
+      );
+    }, "image/png");
+  } catch (error) {
+    updateStatus("Erro ao exportar PNG: " + error.message);
+  }
+});
+
+updateLineList();
+</script>
+
+<script id="noir-grid-floating-logic">
+(() => {
+  const get = id => document.getElementById(id);
+  const panel = get("noir-grid-float-panel");
+  const content = get("noir-grid-float-content");
+  const toggle = get("noir-grid-toggle");
+  const close = get("noir-grid-close");
+
+  if (!panel || !content || !toggle || !close) return;
+
+  // Sliders continuam ligados aos mesmos campos usados pela lógica original.
+  const pairs = [
+    ["columns", "slider-columns"],
+    ["rows", "slider-rows"],
+    ["offsetX", "slider-offsetX"],
+    ["offsetY", "slider-offsetY"],
+    ["cellW", "slider-cellW"],
+    ["cellH", "slider-cellH"]
+  ];
+
+  function syncFromNumber(number, slider) {
+    const value = Number(number.value);
+    const min = Number(slider.min);
+    const max = Number(slider.max);
+    if (Number.isFinite(value)) {
+      slider.value = String(Math.min(max, Math.max(min, value)));
+    }
+  }
+
+  for (const [numberId, sliderId] of pairs) {
+    const number = get(numberId);
+    const slider = get(sliderId);
+    if (!number || !slider) continue;
+
+    function syncBounds() {
+      slider.min = number.min !== "" ? number.min : "0";
+      slider.max = number.max !== "" ? number.max : "8192";
+      slider.step = number.step !== "" ? number.step : "1";
+    }
+
+    syncBounds();
+
+    number.addEventListener("input", () => {
+      syncBounds();
+      syncFromNumber(number, slider);
+    });
+
+    slider.addEventListener("input", () => {
+      number.value = slider.value;
+      number.dispatchEvent(new Event("input", { bubbles: true }));
+      number.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    syncFromNumber(number, slider);
+  }
+
+  function setOpen(open) {
+    panel.hidden = !open;
+    toggle.setAttribute("aria-expanded", String(open));
+    toggle.textContent = open ? "✕ Fechar ajustes" : "⚙ Ajustes da grade";
+  }
+
+  toggle.addEventListener("click", () => setOpen(panel.hidden));
+  close.addEventListener("click", () => setOpen(false));
+  document.addEventListener("keydown", event => {
+    if (event.key === "Escape") setOpen(false);
+  });
+})();
+</script>
+
+</body>
+</html>

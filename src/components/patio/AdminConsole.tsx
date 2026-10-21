@@ -1,5 +1,5 @@
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { AlertTriangle, Coins, Grip, Minus, Plus, X } from "lucide-react";
+import { AlertTriangle, Coins, Grip, Minus, Plus, Wrench, X } from "lucide-react";
 import { sayAs } from "@/game/sim";
 import { useGame } from "@/game/store";
 
@@ -102,6 +102,23 @@ export function AdminConsole({ onClose, onSendAlert }: { onClose: () => void; on
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {tab === "main" ? <>
             <p className="mb-4 rounded-2xl border border-primary/20 bg-bg p-3 text-sm text-muted">Cargo atual: <strong className="text-primary">Administrador</strong>. Ferramentas operam somente no perfil local neste protótipo.</p>
+            <section className="mb-4 overflow-hidden rounded-2xl border border-[#b99a62]/40 bg-gradient-to-br from-[#30271f] via-[#211e26] to-[#151419] p-4">
+              <div className="flex items-start gap-3">
+                <div className="grid size-11 shrink-0 place-items-center rounded-xl border border-[#d8bd87]/35 bg-[#d8bd87]/10 text-[#d8bd87]">
+                  <Wrench className="size-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#d8bd87]">Ateliê de criação</p>
+                  <h3 className="mt-1 font-display text-lg text-[#f2e8d5]">NOIR CITY LAB</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-[#c5b9a7]">Ferramentas de sprites, remoção de fundo e criação de móveis personalizados.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => window.open("/noir-city-lab/index.html", "_blank", "noopener,noreferrer")}
+                className="mt-4 h-11 w-full rounded-full border border-[#d8bd87]/50 bg-[#d8bd87] font-semibold text-[#211a13] transition hover:bg-[#ead7ad]"
+              >Abrir laboratório <span aria-hidden="true">↗</span></button>
+            </section>
             <section className="rounded-2xl border border-white/10 bg-bg p-4">
               <h3 className="flex items-center gap-2 font-semibold"><AlertTriangle className="size-5 text-primary" /> Alerta ao vivo</h3>
               <p className="mt-2 text-sm text-muted">No protótipo local, o aviso aparece neste quarto.</p>
