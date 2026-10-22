@@ -172,10 +172,35 @@ input[type="checkbox"]:focus-visible {
   outline-offset: 3px;
 }
 
+
+.noir-lab-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 40px;
+  margin: 0 0 14px;
+  padding: 9px 15px;
+  border: 1px solid rgba(217, 170, 104, 0.55);
+  border-radius: 999px;
+  background: rgba(33, 23, 15, 0.88);
+  color: #e7c58f;
+  font: 600 14px/1.2 system-ui, sans-serif;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.noir-lab-back:hover,
+.noir-lab-back:focus-visible {
+  background: #d9aa68;
+  color: #21170f;
+  outline: none;
+}
+
 </style>
 </head>
 <body>
 <header>
+  <a class="noir-lab-back" href="../index.html" aria-label="Voltar ao Noir City Lab">← Voltar ao Noir City Lab</a>
   <h1>Oficina de Móveis</h1>
   <p>Noir City Lab · Ajuste de sprites, encaixe e posicionamento isométrico.</p>
 </header>

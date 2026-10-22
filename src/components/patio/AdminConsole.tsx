@@ -41,8 +41,11 @@ export function AdminConsole({ onClose, onSendAlert }: { onClose: () => void; on
 
   function moveDrag(event: ReactPointerEvent<HTMLElement>) {
     if (!drag.current) return;
-    const maxX = Math.max(0, window.innerWidth - frame.width);
-    const maxY = Math.max(0, window.innerHeight - 48);
+    const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const headerHeight = 56;
+    const maxX = Math.max(0, viewportWidth - Math.min(frame.width, viewportWidth - 24));
+    const maxY = Math.max(0, viewportHeight - headerHeight);
     setFrame((current) => ({
       ...current,
       x: Math.max(0, Math.min(maxX, drag.current!.left + event.clientX - drag.current!.x)),
@@ -115,7 +118,7 @@ export function AdminConsole({ onClose, onSendAlert }: { onClose: () => void; on
               </div>
               <button
                 type="button"
-                onClick={() => window.open("/noir-city-lab/index.html", "_blank", "noopener,noreferrer")}
+                onClick={() => { window.location.href = "/noir-city-lab/index.html"; }}
                 className="mt-4 h-11 w-full rounded-full border border-[#d8bd87]/50 bg-[#d8bd87] font-semibold text-[#211a13] transition hover:bg-[#ead7ad]"
               >Abrir laboratório <span aria-hidden="true">↗</span></button>
             </section>
