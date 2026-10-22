@@ -108,7 +108,7 @@ export function AdminConsole({ onClose, onSendAlert }: { onClose: () => void; on
   }
 
   return <>
-    {!minimized && <div className="fixed inset-0 z-[70] bg-black/65" aria-hidden />}
+    {!minimized && <div className="pointer-events-none fixed inset-0 z-[70] bg-black/65" aria-hidden />}
     <section
       className="fixed z-[71] flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-primary/60 bg-surface text-fg shadow-2xl"
       style={{ left: frame.x, top: frame.y, width: frame.width, height: minimized ? "auto" : frame.height, maxWidth: "calc(100vw - 24px)", maxHeight: "calc(100dvh - 24px)" }}
