@@ -1,4 +1,4 @@
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { AlertTriangle, Coins, Grip, Minus, Plus, Wrench, X } from "lucide-react";
 import { sayAs } from "@/game/sim";
 import { useGame } from "@/game/store";
@@ -31,6 +31,38 @@ export function AdminConsole({ onClose, onSendAlert }: { onClose: () => void; on
   const [alert, setAlert] = useState("");
   const drag = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
   const resize = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    let timer = 0;
+
+    const recoverWindow = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        setFrame((current) => {
+          const maxX = Math.max(12, width - Math.min(current.width, width - 24));
+          const maxY = Math.max(12, height - 56);
+          return {
+            ...current,
+            x: Math.max(12, Math.min(maxX, current.x)),
+            y: Math.max(12, Math.min(maxY, current.y)),
+          };
+        });
+      }, 250);
+    };
+
+    window.addEventListener("resize", recoverWindow);
+    viewport?.addEventListener("resize", recoverWindow);
+
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("resize", recoverWindow);
+      viewport?.removeEventListener("resize", recoverWindow);
+    };
+  }, []);
+
   if (role !== "admin") return null;
 
   function beginDrag(event: ReactPointerEvent<HTMLElement>) {
@@ -41,15 +73,16 @@ export function AdminConsole({ onClose, onSendAlert }: { onClose: () => void; on
 
   function moveDrag(event: ReactPointerEvent<HTMLElement>) {
     if (!drag.current) return;
-    const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
-    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const viewport = window.visualViewport;
+    const viewportWidth = viewport?.width ?? window.innerWidth;
+    const viewportHeight = viewport?.height ?? window.innerHeight;
     const headerHeight = 56;
-    const maxX = Math.max(0, viewportWidth - Math.min(frame.width, viewportWidth - 24));
-    const maxY = Math.max(0, viewportHeight - headerHeight);
+    const maxX = Math.max(12, viewportWidth - Math.min(frame.width, viewportWidth - 24));
+    const maxY = Math.max(12, viewportHeight - headerHeight);
     setFrame((current) => ({
       ...current,
-      x: Math.max(0, Math.min(maxX, drag.current!.left + event.clientX - drag.current!.x)),
-      y: Math.max(0, Math.min(maxY, drag.current!.top + event.clientY - drag.current!.y)),
+      x: Math.max(12, Math.min(maxX, drag.current!.left + event.clientX - drag.current!.x)),
+      y: Math.max(12, Math.min(maxY, drag.current!.top + event.clientY - drag.current!.y)),
     }));
   }
 
@@ -62,8 +95,11 @@ export function AdminConsole({ onClose, onSendAlert }: { onClose: () => void; on
 
   function moveResize(event: ReactPointerEvent<HTMLButtonElement>) {
     if (!resize.current) return;
-    const maxWidth = Math.max(260, window.innerWidth - frame.x - 12);
-    const maxHeight = Math.max(220, window.innerHeight - frame.y - 12);
+    const viewport = window.visualViewport;
+    const viewportWidth = viewport?.width ?? window.innerWidth;
+    const viewportHeight = viewport?.height ?? window.innerHeight;
+    const maxWidth = Math.max(260, viewportWidth - frame.x - 12);
+    const maxHeight = Math.max(220, viewportHeight - frame.y - 12);
     setFrame((current) => ({
       ...current,
       width: Math.max(260, Math.min(maxWidth, resize.current!.width + event.clientX - resize.current!.x)),

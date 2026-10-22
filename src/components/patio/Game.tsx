@@ -253,9 +253,15 @@ export function Game() {
             e.preventDefault();
             const message = chat.trim();
             if (message.toLowerCase() === ":console") {
-              if (role === "admin") setShowAdmin(true);
-              else useGame.getState().setToast("Comando restrito à administração");
+              const isAdmin = role === "admin";
+              e.currentTarget.querySelector("input")?.blur();
               setChat("");
+
+              if (isAdmin) {
+                window.setTimeout(() => setShowAdmin(true), 350);
+              } else {
+                useGame.getState().setToast("Comando restrito à administração");
+              }
               return;
             }
             say(message);
